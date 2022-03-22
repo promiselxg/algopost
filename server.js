@@ -14,6 +14,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 //  mount routes
 app.use('/api/coins', require('./backend/routes/coinRoutes'));
+app.use('/api/auth', require('./backend/routes/authRoutes'));
 //  custom error handler
 app.use(errorHandler);
 //  server conncetion
