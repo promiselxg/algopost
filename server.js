@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv').config();
 const colors = require('colors');
+const cors = require('cors');
 const { errorHandler } = require('./backend/middleware/errorMiddleware');
 const connectDB = require('./backend/config/db');
 const PORT = process.env.PORT || 5000;
@@ -11,6 +12,7 @@ connectDB();
 const app = express();
 //  accept form data
 app.use(express.json());
+app.use(cors());
 app.use(express.urlencoded({ extended: false }));
 //  mount routes
 app.use('/api/coins', require('./backend/routes/coinRoutes'));
