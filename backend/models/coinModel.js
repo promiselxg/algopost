@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 const coinSchema = mongoose.Schema(
   {
     tokenOwner: {
-      type: mongoose.Schema.ObjectId,
-      ref: 'User',
+      type: mongoose.Schema.Types.ObjectId,
       required: true,
+      ref: 'User',
     },
     tokenName: {
       type: String,
@@ -28,42 +28,46 @@ const coinSchema = mongoose.Schema(
       unique: true,
     },
     tokenDescription: {
-      type: Array,
+      type: String,
       required: [true, 'Please enter a discription'],
     },
     tokenLogo: {
       type: String,
       required: [true, 'Please enter an address to your token logo'],
     },
-    chartUrl: {
+    tokenStage: {
+      type: Boolean,
+      default: false,
+    },
+    tokenChartUrl: {
       type: String,
       default: '',
     },
-    swapUrl: {
+    tokenSwapUrl: {
       type: String,
       default: '',
     },
-    telegramUrl: {
+    tokenTelegramUrl: {
       type: String,
       default: '',
     },
-    twitterUrl: {
+    tokenTwitterUrl: {
       type: String,
       default: '',
     },
-    discordUrl: {
+    tokenDiscordUrl: {
       type: String,
       default: '',
     },
-    websiteUrl: {
+    tokenWebsiteUrl: {
       type: String,
       default: '',
     },
     tokenLaunchDate: {
-      type: Date,
+      type: String,
       default: '',
     },
-    approved: {
+    isApproved: {
       type: Boolean,
       default: false,
     },

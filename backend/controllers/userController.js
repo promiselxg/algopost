@@ -1,7 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const bcrypt = require('bcryptjs');
 const JWT = require('jsonwebtoken');
-const User = require('../model/userModel');
+const User = require('../models/userModel');
 
 //@desc     Register User
 //@route    POST /api/auth
@@ -28,7 +28,7 @@ const registerUser = asyncHandler(async (req, res) => {
   }
   //  hash user password
   const salt = await bcrypt.genSalt(10);
-  const hasedPassword = await bcrypt.hash(password, salt);
+  const hashedPassword = await bcrypt.hash(password, salt);
 
   //  create new user
   const user = await User.create({
@@ -36,8 +36,8 @@ const registerUser = asyncHandler(async (req, res) => {
     firstname,
     lastname,
     email,
-    password: hasedPassword,
-    token: generateToken(user._id,user.isAdmin),
+    password: hashedPassword,
+    //token: generateToken(user._id, user.isAdmin),
   });
   if (user) {
     res.status(201).json({
@@ -48,8 +48,6 @@ const registerUser = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Inavlid Credentials');
   }
-
-  res.status(200).json({ message: 'Register User' });
 });
 
 //@desc     Login User
@@ -71,7 +69,7 @@ const loginUser = asyncHandler(async (req, res) => {
       _id: user.id,
       username: user.username,
       email: user.email,
-      token: generateToken(user._id,user.isAdmin),
+      token: generateToken(user._id, user.isAdmin),
     });
   } else {
     res.status(400);
@@ -93,8 +91,8 @@ const userProfile = asyncHandler(async (req, res) => {
 });
 
 //  Generate JWT
-const generateToken = (id,isAdmin) => {
-  return JWT.sign({ id,isAdmin }, process.env.JWT_SECRET, {
+const generateToken = (id, isAdmin) => {
+  return JWT.sign({ id, isAdmin }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
 };
