@@ -4,7 +4,7 @@ const JWT = require('jsonwebtoken');
 const User = require('../model/userModel');
 
 //@desc     Register User
-//@route    GET /api/auth
+//@route    POST /api/auth
 //@access   Public
 const registerUser = asyncHandler(async (req, res) => {
   //  accept incoming variable
@@ -37,6 +37,7 @@ const registerUser = asyncHandler(async (req, res) => {
     lastname,
     email,
     password: hasedPassword,
+    token: generateToken(user._id,user.isAdmin),
   });
   if (user) {
     res.status(201).json({
@@ -52,11 +53,16 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 //@desc     Login User
-//@route    GET /api/auth
+//@route    POST /api/auth
 //@access   Public
 const loginUser = asyncHandler(async (req, res) => {
   const { username, password } = req.body;
 
+  //  check user credentials
+  if (!username || !password) {
+    res.status(400);
+    throw new Error('Please enter your username or password');
+  }
   const user = await User.findOne({ username });
 
   if (user && (await bcrypt.compare(password, user.password))) {
@@ -64,14 +70,38 @@ const loginUser = asyncHandler(async (req, res) => {
     res.json({
       _id: user.id,
       username: user.username,
+      email: user.email,
+      token: generateToken(user._id,user.isAdmin),
     });
   } else {
     res.status(400);
-    throw new Error('Inavlid Credentials');
+    throw new Error('Incorrect username or password.');
   }
 });
+
+//@desc     Get User Profile
+//@route    POST /api/auth/
+//@access   Private
+const userProfile = asyncHandler(async (req, res) => {
+  const { _id, username, email } = await User.findById(req.user.id);
+
+  res.status(200).json({
+    id: _id,
+    username,
+    email,
+  });
+});
+
+//  Generate JWT
+const generateToken = (id,isAdmin) => {
+  return JWT.sign({ id,isAdmin }, process.env.JWT_SECRET, {
+    expiresIn: '30d',
+  });
+};
+
 //  export controllers
 module.exports = {
   registerUser,
   loginUser,
+  userProfile,
 };
