@@ -14,42 +14,6 @@ const getCoins = asyncHandler(async (req, res) => {
   });
 });
 
-//@desc     Approve Coin
-//@route    PUT /api/coins/approve/:id
-//@access   Private/Admin
-const approveCoin = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  try {
-    if (req.user.isAdmin) {
-      //  get the token from DB
-      const token = await Coin.findById(id);
-      //  check if token is already approved
-      if (token.isApproved == true) {
-        res.status(401);
-        throw new Error('Token already approved');
-      } else {
-        const approveCoin = await Coin.findByIdAndUpdate(
-          id,
-          {
-            $set: { isApproved: req.body.isApproved },
-          },
-          { new: true }
-        );
-
-        res.status(200).json({ id, approved: approveCoin.isApproved });
-      }
-    } else {
-      res.status(401);
-      throw new Error(
-        `Access Denied, you are not authorized to perform this action.`
-      );
-    }
-  } catch (error) {
-    res.status(401);
-    throw new Error(error);
-  }
-});
-
 //@desc     Get all coins for logged user
 //@route    GET /api/coins/:id
 //@access   Private
@@ -92,6 +56,42 @@ const updateCoin = asyncHandler(async (req, res) => {
         { new: true }
       );
       res.status(200).json(updatedCoin);
+    } else {
+      res.status(401);
+      throw new Error(
+        `Access Denied, you are not authorized to perform this action.`
+      );
+    }
+  } catch (error) {
+    res.status(401);
+    throw new Error(error);
+  }
+});
+
+//@desc     Approve Coin
+//@route    PUT /api/coins/approve/:id
+//@access   Private/Admin
+const approveCoin = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (req.user.isAdmin) {
+      //  get the token from DB
+      const token = await Coin.findById(id);
+      //  check if token is already approved
+      if (token.isApproved == true) {
+        res.status(401);
+        throw new Error('Token already approved');
+      } else {
+        const approveCoin = await Coin.findByIdAndUpdate(
+          id,
+          {
+            $set: { isApproved: req.body.isApproved },
+          },
+          { new: true }
+        );
+
+        res.status(200).json({ id, approved: approveCoin.isApproved });
+      }
     } else {
       res.status(401);
       throw new Error(
