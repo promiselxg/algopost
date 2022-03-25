@@ -1,14 +1,119 @@
 const asyncHandler = require('express-async-handler');
 const Coin = require('../models/coinModel');
-//@desc     get all coins
+
+//@desc     Get all coins
 //@route    GET /api/coins
 //@access   Public
 const getCoins = asyncHandler(async (req, res) => {
-  res.status(200).json({ message: 'Coin Route' });
+  //  get all tokens where isApproved == true
+  const token = await Coin.find({ isApproved: false });
+
+  res.status(200).json({
+    count: token.length,
+    token,
+  });
+});
+
+//@desc     Approve Coin
+//@route    PUT /api/coins/approve/:id
+//@access   Private/Admin
+const approveCoin = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (req.user.isAdmin) {
+      //  get the token from DB
+      const token = await Coin.findById(id);
+      //  check if token is already approved
+      if (token.isApproved == true) {
+        res.status(401);
+        throw new Error('Token already approved');
+      } else {
+        const approveCoin = await Coin.findByIdAndUpdate(
+          id,
+          {
+            $set: { isApproved: req.body.isApproved },
+          },
+          { new: true }
+        );
+
+        res.status(200).json({ id, approved: approveCoin.isApproved });
+      }
+    } else {
+      res.status(401);
+      throw new Error(
+        `Access Denied, you are not authorized to perform this action.`
+      );
+    }
+  } catch (error) {
+    res.status(401);
+    throw new Error(error);
+  }
+});
+
+//@desc     Get all coins for logged user
+//@route    GET /api/coins/:id
+//@access   Private
+const myCoins = asyncHandler(async (req, res) => {
+  //  get login user id
+  const { id } = req.params;
+  //  check if ID param === logged in user
+  if (id != req.user.id) {
+    res.status(401);
+    throw new Error('Access Denied');
+  }
+  //  fetch logged user data
+  try {
+    const coin = await Coin.find({ tokenOwner: id }).sort({ _id: -1 });
+
+    res.status(200).json({
+      coin,
+    });
+  } catch (error) {
+    res.status(401);
+    throw new Error(error);
+  }
+});
+
+//@desc     Update Coin
+//@route    PUT /api/coins/:id
+//@access   Private
+const updateCoin = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  try {
+    //  get the token from DB
+    const token = await Coin.findById(id);
+    //  check if logged in user is the owner of this account or if the logged in user is an Admin
+    if (req.user.id == token.tokenOwner || req.user.isAdmin) {
+      const updatedCoin = await Coin.findByIdAndUpdate(
+        id,
+        {
+          $set: req.body,
+        },
+        { new: true }
+      );
+      res.status(200).json(updatedCoin);
+    } else {
+      res.status(401);
+      throw new Error(
+        `Access Denied, you are not authorized to perform this action.`
+      );
+    }
+  } catch (error) {
+    res.status(401);
+    throw new Error(error);
+  }
+});
+
+//@desc     Delete Coin
+//@route    Delete /api/coins/:id
+//@access   Private
+const deleteCoin = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  res.status(200).json({ msg: `delete coin ${id}` });
 });
 
 //@desc     Register new Coin
-//@route    POST /api/coins
+//@route    POST /api/coins/new
 //@access   Private
 const registerCoin = asyncHandler(async (req, res) => {
   //  check if user making this submission is the logged inn user
@@ -82,27 +187,8 @@ const registerCoin = asyncHandler(async (req, res) => {
     //  Return User Record
     if (coin) {
       res.status(201).json({
-        _id: coin.id,
-        token: coin.tokenName,
-        launch_date: coin.tokenLaunchDate,
-        description: coin.tokenDescription,
-        status: coin.isApproved,
-        token_owner: coin.tokenOwner,
-        tokenInfo: {
-          symbol: coin.tokenSymbol,
-          network: coin.tokenNetwork,
-          contract_address: coin.tokenContractAddress,
-          stage: coin.tokenStage,
-          logo: coin.tokenLogo,
-        },
-        metadata: {
-          swap_url: coin.tokenSwapUrl,
-          website_url: coin.tokenWebsiteUrl,
-          chart_url: coin.tokenChartUrl,
-          telegram_url: coin.tokenTelegramUrl,
-          twitter_url: coin.tokenTwitterUrl,
-          discord_url: coin.tokenDiscordUrl,
-        },
+        status: true,
+        message: 'Token Submitted Successfully',
       });
       //  send email
     } else {
@@ -118,4 +204,8 @@ const registerCoin = asyncHandler(async (req, res) => {
 module.exports = {
   getCoins,
   registerCoin,
+  myCoins,
+  updateCoin,
+  deleteCoin,
+  approveCoin,
 };
