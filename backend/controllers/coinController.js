@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const Coin = require('../models/coinModel');
+const Vote = require('../models/voteModel');
 
 //@desc     Get all coins
 //@route    GET /api/coins
@@ -76,6 +77,46 @@ const updateCoin = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc     Update Coin
+//@route    PUT /api/coins/:id
+//@access   Private
+const voteCoin = asyncHandler(async (req, res) => {
+  //  get token id
+  const { id } = req.params;
+  try {
+    //  check if token exist
+    const token = await Coin.findById(id);
+    if (token) {
+      //  check if token is approved
+      if (!token.isApproved) {
+        res.status(400);
+        throw new Error(`token not yet available for voting.`);
+      }
+    }
+    // check Vote DB to see if this user has already voted for this coin
+    const voteCheck = await Vote.findOne({
+      token_id: id,
+      user_id: req.user.id,
+    });
+    if (voteCheck) {
+      res.status(401);
+      throw new Error('already voted');
+    }
+    // upvote token
+    const voteToken = await Coin.findByIdAndUpdate(id, {
+      vote: token.vote + 1,
+    });
+    //  create vote reference on voteDB
+    const voteRef = await Vote.create({ user_id: req.user.id, token_id: id });
+    //  check if
+    if (voteToken && voteRef) {
+      res.status(200).json({ status: true, message: 'vote successfull.' });
+    }
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
+});
 //@desc     Approve Coin
 //@route    PUT /api/coins/approve/:id
 //@access   Private/Admin
@@ -246,4 +287,5 @@ module.exports = {
   updateCoin,
   deleteCoin,
   approveCoin,
+  voteCoin,
 };

@@ -4,7 +4,7 @@ const JWT = require('jsonwebtoken');
 const User = require('../models/userModel');
 
 //@desc     Register User
-//@route    POST /api/auth
+//@route    POST /api/auth/register
 //@access   Public
 const registerUser = asyncHandler(async (req, res) => {
   //  accept incoming variable
@@ -51,7 +51,7 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 //@desc     Login User
-//@route    POST /api/auth
+//@route    POST /api/auth/login
 //@access   Public
 const loginUser = asyncHandler(async (req, res) => {
   const { username, password } = req.body;
@@ -79,7 +79,7 @@ const loginUser = asyncHandler(async (req, res) => {
 });
 
 //@desc     Get User Profile
-//@route    POST /api/auth/
+//@route    POST /api/auth/profile
 //@access   Private
 const userProfile = asyncHandler(async (req, res) => {
   const { _id, username, email } = await User.findById(req.user.id);
