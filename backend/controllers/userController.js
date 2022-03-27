@@ -83,12 +83,52 @@ const loginUser = asyncHandler(async (req, res) => {
 //@access   Private
 const userProfile = asyncHandler(async (req, res) => {
   const { _id, username, email } = await User.findById(req.user.id);
-
   res.status(200).json({
     id: _id,
     username,
     email,
   });
+});
+
+//@desc     Update User Profile
+//@route    PUT /api/auth/:id/update
+//@access   Private
+const updateProfile = asyncHandler(async (req, res) => {
+  try {
+    if (req.user.id === req.params.id) {
+      //  check if user is changing his password
+      if (req.body.password) {
+        //  compare password
+        if (req.body.password != req.body.confirm_password) {
+          res.status(409);
+          throw new Error('Password Mismatch');
+        }
+        //  check DB to know id user really exist
+        if (!(await User.findById(req.params.id))) {
+          res.status(403);
+          throw new Error('Invalid user credentials');
+        }
+        //  hash user password
+        const salt = await bcrypt.genSalt(10);
+        req.body.password = await bcrypt.hash(req.body.password, salt);
+      }
+      //  Update user info
+      await User.findByIdAndUpdate(
+        req.params.id,
+        {
+          $set: req.body,
+        },
+        { new: true }
+      );
+      res.status(200).json({ status: true, message: 'Updated successfully' });
+    } else {
+      res.status(401);
+      throw new Error('Unauthorized access');
+    }
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
 });
 
 //  Generate JWT
@@ -103,4 +143,5 @@ module.exports = {
   registerUser,
   loginUser,
   userProfile,
+  updateProfile,
 };

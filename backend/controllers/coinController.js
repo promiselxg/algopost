@@ -173,7 +173,6 @@ const registerCoin = asyncHandler(async (req, res) => {
     token_discord_url,
   } = req.body;
 
-  console.log(token_logo);
   //  validate incoming variable
   if (
     !token_name ||
