@@ -6,7 +6,7 @@ const Coin = require('../models/coinModel');
 //@access   Public
 const getCoins = asyncHandler(async (req, res) => {
   //  get all tokens where isApproved == true
-  const token = await Coin.find({ isApproved: false });
+  const token = await Coin.find({ isApproved: true });
 
   res.status(200).json({
     count: token.length,

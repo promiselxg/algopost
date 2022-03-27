@@ -7,17 +7,17 @@ const {
   deleteCoin,
   approveCoin,
 } = require('../controllers/coinController');
-const { protect } = require('../middleware/authMiddleware');
+const { verifyToken } = require('../middleware/authMiddleware');
 const router = express.Router();
 
 // Mount Routes
 router.route('/').get(getCoins);
-router.route('/new').post(protect, registerCoin);
-router.route('/approve/:id').put(protect, approveCoin);
+router.route('/new').post(verifyToken, registerCoin);
+router.route('/approve/:id').put(verifyToken, approveCoin);
 router
   .route('/:id')
-  .get(protect, myCoins)
-  .put(protect, updateCoin)
-  .delete(protect, deleteCoin);
+  .get(verifyToken, myCoins)
+  .put(verifyToken, updateCoin)
+  .delete(verifyToken, deleteCoin);
 
 module.exports = router;

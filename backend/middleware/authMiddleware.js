@@ -2,23 +2,21 @@ const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/userModel');
 
-const protect = asyncHandler(async (req, res, next) => {
+//  Verify user token
+const verifyToken = asyncHandler(async (req, res, next) => {
   let token;
-
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+  if (authHeader && authHeader.startsWith('Bearer')) {
     try {
       //    Get token from header
-      token = req.headers.authorization.split(' ')[1];
+      token = authHeader.split(' ')[1];
       //    Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       //    Get user from the token
       req.user = await User.findById(decoded.id).select('-password');
       next();
     } catch (error) {
-      res.status(401);
+      res.status(403);
       throw new Error('Unauthorized Access');
     }
   }
@@ -29,6 +27,11 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 });
 
+//  Verify user role
+const verifyRoles = () => {
+  return asyncHandler(async (req, res, next) => {});
+};
 module.exports = {
-  protect,
+  verifyToken,
+  verifyRoles,
 };
