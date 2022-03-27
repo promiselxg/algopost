@@ -6,8 +6,12 @@ const Coin = require('../models/coinModel');
 //@access   Public
 const getCoins = asyncHandler(async (req, res) => {
   //  get all tokens where isApproved == true
-  const token = await Coin.find({ isApproved: true });
+  const token = await Coin.find({ isApproved: false });
 
+  if (!token) {
+    res.status(404);
+    throw new Error('No Token found.');
+  }
   res.status(200).json({
     count: token.length,
     token,
@@ -46,6 +50,10 @@ const updateCoin = asyncHandler(async (req, res) => {
   try {
     //  get the token from DB
     const token = await Coin.findById(id);
+    if (!token) {
+      res.status(404);
+      throw new Error('Token not found.');
+    }
     //  check if logged in user is the owner of this account or if the logged in user is an Admin
     if (req.user.id == token.tokenOwner || req.user.isAdmin) {
       const updatedCoin = await Coin.findByIdAndUpdate(
@@ -109,7 +117,37 @@ const approveCoin = asyncHandler(async (req, res) => {
 //@access   Private
 const deleteCoin = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  res.status(200).json({ msg: `delete coin ${id}` });
+  //  check if coin exist
+  if (id) {
+    try {
+      //  get coin details from DB
+      const token = await Coin.findById(id);
+      if (!token) {
+        res.status(404);
+        throw new Error('Token not found.');
+      }
+      //  check if logged in user is the owner of this token or if logged in user is Admin
+      if (req.user.id == token.tokenOwner || req.user.isAdmin) {
+        if (await Coin.findByIdAndDelete(id)) {
+          res.status(200).json({ status: 'success', id });
+        } else {
+          res.status(400);
+          throw new Error(`Error occured, unable to remove token ${id}`);
+        }
+      } else {
+        res.status(401);
+        throw new Error(
+          `Access Denied, you are not authorized to perform this action.`
+        );
+      }
+    } catch (error) {
+      res.status(400);
+      throw new Error(error);
+    }
+  } else {
+    res.status(400);
+    throw new Error(`Access Denied`);
+  }
 });
 
 //@desc     Register new Coin
@@ -169,20 +207,26 @@ const registerCoin = asyncHandler(async (req, res) => {
   try {
     const coin = await Coin.create({
       tokenName: token_name,
+      tokenOwner: req.user.id,
       tokenSymbol: token_symbol,
       tokenNetwork: token_network,
       tokenContractAddress: token_contract_address,
       tokenDescription: token_description,
-      tokenLogo: token_logo,
-      tokenStage: token_stage,
-      tokenChartUrl: token_chart_url,
-      tokenSwapUrl: token_swap_url,
-      tokenTelegramUrl: token_telegram_url,
-      tokenTwitterUrl: token_twitter_url,
-      tokenDiscordUrl: token_discord_url,
-      tokenWebsiteUrl: token_website_url,
       tokenLaunchDate: token_launch_date,
-      tokenOwner: req.user.id,
+      token: {
+        tokenLogo: token_logo,
+        tokenStage: token_stage,
+        tokenChartUrl: token_chart_url,
+        tokenSwapUrl: token_swap_url,
+      },
+      metadata: {
+        social: {
+          tokenTelegramUrl: token_telegram_url,
+          tokenTwitterUrl: token_twitter_url,
+          tokenDiscordUrl: token_discord_url,
+          tokenWebsiteUrl: token_website_url,
+        },
+      },
     });
     //  Return User Record
     if (coin) {
