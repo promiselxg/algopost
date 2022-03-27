@@ -6,7 +6,7 @@ const Coin = require('../models/coinModel');
 //@access   Public
 const getCoins = asyncHandler(async (req, res) => {
   //  get all tokens where isApproved == true
-  const token = await Coin.find({ isApproved: false });
+  const token = await Coin.find({ isApproved: true });
 
   if (!token) {
     res.status(404);
@@ -31,7 +31,7 @@ const myCoins = asyncHandler(async (req, res) => {
   }
   //  fetch logged user data
   try {
-    const coin = await Coin.find({ tokenOwner: id }).sort({ _id: -1 });
+    const coin = await Coin.find({ token_owner: id }).sort({ _id: -1 });
 
     res.status(200).json({
       coin,
@@ -55,7 +55,7 @@ const updateCoin = asyncHandler(async (req, res) => {
       throw new Error('Token not found.');
     }
     //  check if logged in user is the owner of this account or if the logged in user is an Admin
-    if (req.user.id == token.tokenOwner || req.user.isAdmin) {
+    if (req.user.id == token.token_owner || req.user.isAdmin) {
       const updatedCoin = await Coin.findByIdAndUpdate(
         id,
         {
@@ -127,7 +127,7 @@ const deleteCoin = asyncHandler(async (req, res) => {
         throw new Error('Token not found.');
       }
       //  check if logged in user is the owner of this token or if logged in user is Admin
-      if (req.user.id == token.tokenOwner || req.user.isAdmin) {
+      if (req.user.id == token.token_owner || req.user.isAdmin) {
         if (await Coin.findByIdAndDelete(id)) {
           res.status(200).json({ status: 'success', id });
         } else {
@@ -173,6 +173,7 @@ const registerCoin = asyncHandler(async (req, res) => {
     token_discord_url,
   } = req.body;
 
+  console.log(token_logo);
   //  validate incoming variable
   if (
     !token_name ||
@@ -206,27 +207,21 @@ const registerCoin = asyncHandler(async (req, res) => {
   //  Create Token
   try {
     const coin = await Coin.create({
-      tokenName: token_name,
-      tokenOwner: req.user.id,
-      tokenSymbol: token_symbol,
-      tokenNetwork: token_network,
-      tokenContractAddress: token_contract_address,
-      tokenDescription: token_description,
-      tokenLaunchDate: token_launch_date,
-      token: {
-        tokenLogo: token_logo,
-        tokenStage: token_stage,
-        tokenChartUrl: token_chart_url,
-        tokenSwapUrl: token_swap_url,
-      },
-      metadata: {
-        social: {
-          tokenTelegramUrl: token_telegram_url,
-          tokenTwitterUrl: token_twitter_url,
-          tokenDiscordUrl: token_discord_url,
-          tokenWebsiteUrl: token_website_url,
-        },
-      },
+      token_name,
+      token_owner: req.user.id,
+      token_symbol,
+      token_network,
+      token_contract_address,
+      token_description,
+      token_logo,
+      token_stage,
+      token_chart_url,
+      token_swap_url,
+      token_website_url,
+      token_launch_date,
+      token_telegram_url,
+      token_twitter_url,
+      token_discord_url,
     });
     //  Return User Record
     if (coin) {

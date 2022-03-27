@@ -2,74 +2,74 @@ const mongoose = require('mongoose');
 
 const coinSchema = mongoose.Schema(
   {
-    tokenOwner: {
+    token_owner: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: 'User',
     },
-    tokenName: {
+    token_name: {
       type: String,
       required: [true, 'Please enter a token name'],
       unique: true,
     },
-    tokenSymbol: {
+    token_symbol: {
       type: String,
       required: [true, 'Please enter a token symbol'],
       unique: true,
     },
-    tokenNetwork: {
+    token_network: {
       type: String,
       required: [true, 'Please provide a token network'],
       enum: ['Binance', 'Ethereum', 'Polygon', 'Tron', 'Solana'],
     },
-    tokenContractAddress: {
+    token_contract_address: {
       type: String,
       required: [true, 'Please enter your contract address'],
       unique: true,
     },
-    tokenDescription: {
+    token_description: {
       type: String,
       required: [true, 'Please enter a discription'],
     },
-    tokenLogo: {
+    token_logo: {
       type: String,
       required: [true, 'Please enter an address to your token logo'],
-    },
-    tokenStage: {
-      type: Boolean,
-      default: false,
-    },
-    tokenChartUrl: {
-      type: String,
-      default: '',
-    },
-    tokenSwapUrl: {
-      type: String,
-      default: '',
-    },
-    tokenTelegramUrl: {
-      type: String,
-      default: '',
-    },
-    tokenTwitterUrl: {
-      type: String,
-      default: '',
-    },
-    tokenDiscordUrl: {
-      type: String,
-      default: '',
-    },
-    tokenWebsiteUrl: {
-      type: String,
-      default: '',
-    },
-    tokenLaunchDate: {
-      type: String,
-      default: '',
     },
     isApproved: {
       type: Boolean,
       default: false,
+    },
+    token_stage: {
+      type: Boolean,
+      default: false,
+    },
+    token_chart_url: {
+      type: String,
+      default: '',
+    },
+    token_swap_url: {
+      type: String,
+      default: '',
+    },
+    token_website_url: {
+      type: String,
+      default: '',
+    },
+    token_launch_date: {
+      type: String,
+      default: '',
+    },
+    token_telegram_url: {
+      type: String,
+      default: '',
+    },
+    token_twitter_url: {
+      type: String,
+      default: '',
+    },
+    token_discord_url: {
+      type: String,
+      default: '',
     },
   },
   {
