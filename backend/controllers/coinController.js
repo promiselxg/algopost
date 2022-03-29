@@ -1,13 +1,31 @@
 const asyncHandler = require('express-async-handler');
 const Coin = require('../models/coinModel');
 const Vote = require('../models/voteModel');
+const User = require('../models/userModel');
+
+//@desc     Get all approved coins
+//@route    GET /api/coins
+//@access   Public
+const getApprovedCoins = asyncHandler(async (req, res) => {
+  //  get all tokens where isApproved == true
+  const token = await Coin.find({ isApproved: true }).sort({ _id: -1 });
+
+  if (!token) {
+    res.status(404);
+    throw new Error('No Token found.');
+  }
+  res.status(200).json({
+    count: token.length,
+    token,
+  });
+});
 
 //@desc     Get all coins
 //@route    GET /api/coins
 //@access   Public
 const getCoins = asyncHandler(async (req, res) => {
   //  get all tokens where isApproved == true
-  const token = await Coin.find({ isApproved: true });
+  const token = await Coin.find().sort({ _id: -1 });
 
   if (!token) {
     res.status(404);
@@ -43,6 +61,38 @@ const myCoins = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc     Get voted token for logged in user.
+//@route    GET /api/coins/:id/vote
+//@access   Private
+const myVotedCoins = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (id) {
+    try {
+      //  check if user ID exits
+      const userExist = await User.findById(id);
+      if (userExist) {
+        try {
+          //  check coin collection to see if user has a voted coin
+          const coinCheck = await Vote.find(
+            { user_id: req.user.id },
+            { token_id: 1, _id: 0 }
+          );
+          res.status(200).json({
+            count: coinCheck.length,
+            data: coinCheck,
+          });
+        } catch (error) {
+          res.status(404);
+          throw new Error(error);
+        }
+      }
+    } catch (error) {
+      res.status(400);
+      throw new Error(error);
+    }
+  }
+});
 //@desc     Update Coin
 //@route    PUT /api/coins/:id
 //@access   Private
@@ -77,7 +127,7 @@ const updateCoin = asyncHandler(async (req, res) => {
   }
 });
 
-//@desc     Update Coin
+//@desc     Upvote Coin
 //@route    PUT /api/coins/:id
 //@access   Private
 const voteCoin = asyncHandler(async (req, res) => {
@@ -229,21 +279,21 @@ const registerCoin = asyncHandler(async (req, res) => {
     throw new Error('Please fill out the required fields.');
   }
 
-  //  check if token name already exist
-  const checkTokenName = await Coin.findOne({
-    $or: [
-      { tokenName: token_name },
-      { tokenSymbol: token_symbol },
-      { tokenContractAddress: token_contract_address },
-    ],
-  });
-  if (checkTokenName) {
-    res.status(401);
-    throw new Error(
-      `token name or token symbol or token contract address already exist`
-    );
+  try {
+    //  check if token name already exist
+    const checkTokenName = await Coin.findOne({
+      $or: [{ token_name }, { token_symbol }, { token_contract_address }],
+    });
+    if (checkTokenName) {
+      res.status(401);
+      throw new Error(
+        `token name or token symbol or token contract address already exist`
+      );
+    }
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
   }
-
   //  Create Token
   try {
     const coin = await Coin.create({
@@ -281,6 +331,7 @@ const registerCoin = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  getApprovedCoins,
   getCoins,
   registerCoin,
   myCoins,
@@ -288,4 +339,5 @@ module.exports = {
   deleteCoin,
   approveCoin,
   voteCoin,
+  myVotedCoins,
 };
