@@ -2,51 +2,57 @@ const asyncHandler = require('express-async-handler');
 const bcrypt = require('bcryptjs');
 const JWT = require('jsonwebtoken');
 const User = require('../models/userModel');
-
+const ROLES = require('../config/roles');
 //@desc     Register User
 //@route    POST /api/auth/register
 //@access   Public
 const registerUser = asyncHandler(async (req, res) => {
-  //  accept incoming variable
-  const { username, firstname, lastname, email, password, confirm_password } =
-    req.body;
-  //  validate incoming variables
-  if (!firstname || !username || !email || !password || !confirm_password) {
-    res.status(400);
-    throw new Error('Please fill out the required fields.');
-  }
-  //  check if passwords match
-  if (password != confirm_password) {
-    res.status(400);
-    throw new Error('Password Mismatch');
-  }
-  //  check if user already exist
-  const userExist = await User.findOne({ $or: [{ email }, { username }] });
-  if (userExist) {
-    res.status(400);
-    throw new Error('Username or Email address already exist.');
-  }
-  //  hash user password
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
+  try {
+    //  accept incoming variable
+    const { username, firstname, lastname, email, password, confirm_password } =
+      req.body;
+    //  validate incoming variables
+    if (!firstname || !username || !email || !password || !confirm_password) {
+      res.status(400);
+      throw new Error('Please fill out the required fields.');
+    }
+    //  check if passwords match
+    if (password != confirm_password) {
+      res.status(400);
+      throw new Error('Password Mismatch');
+    }
+    //  check if user already exist
+    const userExist = await User.findOne({ $or: [{ email }, { username }] });
+    if (userExist) {
+      res.status(400);
+      throw new Error('Username or Email address already exist.');
+    }
+    //  hash user password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-  //  create new user
-  const user = await User.create({
-    username,
-    firstname,
-    lastname,
-    email,
-    password: hashedPassword,
-    //token: generateToken(user._id, user.isAdmin),
-  });
-  if (user) {
-    res.status(201).json({
-      _id: user.id,
-      username: user.username,
+    //  create new user
+    const user = await User.create({
+      username,
+      firstname,
+      lastname,
+      email,
+      password: hashedPassword,
+      role: [ROLES.user],
+      //token: generateToken(user._id, user.isAdmin),
     });
-  } else {
-    res.status(400);
-    throw new Error('Inavlid Credentials');
+    if (user) {
+      res.status(201).json({
+        _id: user.id,
+        username: user.username,
+      });
+    } else {
+      res.status(400);
+      throw new Error('Inavlid Credentials');
+    }
+  } catch (error) {
+    res.status(401);
+    throw new Error(error);
   }
 });
 
@@ -64,13 +70,16 @@ const loginUser = asyncHandler(async (req, res) => {
   const user = await User.findOne({ username });
 
   if (user && (await bcrypt.compare(password, user.password))) {
+    const roles = Object.values(user.role);
     res.status(200);
     res.json({
-      _id: user.id,
-      username: user.username,
-      email: user.email,
-      isAdmin: user.isAdmin,
-      token: generateToken(user._id, user.isAdmin),
+      userInfo: {
+        _id: user.id,
+        username: user.username,
+        email: user.email,
+        role: roles,
+        token: generateToken(user._id, roles),
+      },
     });
   } else {
     res.status(400);
@@ -88,6 +97,20 @@ const userProfile = asyncHandler(async (req, res) => {
     username,
     email,
   });
+});
+
+//@desc     GET all registered users
+//@route    GET /api/auth/users
+//@access   Private
+const registeredUsers = asyncHandler(async (req, res) => {
+  try {
+    const allUsers = await User.find({ isAdmin: false }).sort({ _id: -1 });
+    if (allUsers) {
+      res.status(200).json({ count: allUsers.length, allUsers });
+    }
+  } catch (error) {
+    throw new Error(error);
+  }
 });
 
 //@desc     Update User Profile
@@ -132,9 +155,9 @@ const updateProfile = asyncHandler(async (req, res) => {
 });
 
 //  Generate JWT
-const generateToken = (id, isAdmin) => {
-  return JWT.sign({ id, isAdmin }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
+const generateToken = (id, role) => {
+  return JWT.sign({ id, role }, process.env.JWT_SECRET, {
+    expiresIn: '5d',
   });
 };
 
@@ -144,4 +167,5 @@ module.exports = {
   loginUser,
   userProfile,
   updateProfile,
+  registeredUsers,
 };

@@ -5,10 +5,10 @@ const connectDB = async () => {
     const conn = await mongoose.connect(process.env.MONGO_DB_URI);
 
     console.log(
-      `MongoDB Connected: ${conn.connection.host}`.yellow.bold.underline
+      `MongoDB Connected: ${conn.connection.host}`.cyan.bold.underline
     );
   } catch (error) {
-    console.log(error.red);
+    console.log(error.red.bold.underline);
     process.exit(1);
   }
 };

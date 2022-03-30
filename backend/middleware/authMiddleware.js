@@ -27,11 +27,6 @@ const verifyToken = asyncHandler(async (req, res, next) => {
   }
 });
 
-//  Verify user role
-const verifyRoles = () => {
-  return asyncHandler(async (req, res, next) => {});
-};
 module.exports = {
   verifyToken,
-  verifyRoles,
 };

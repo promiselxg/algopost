@@ -4,13 +4,24 @@ const {
   loginUser,
   userProfile,
   updateProfile,
+  registeredUsers,
 } = require('../controllers/userController');
+const Role = require('../config/roles');
 const router = express.Router();
 const { verifyToken } = require('../middleware/authMiddleware');
+const { verifyUserRoles } = require('../middleware/roleMiddleware');
+
 // Mount Routes
 router.route('/register').post(registerUser);
 router.route('/login').post(loginUser);
-router.route('/profile').get(verifyToken, userProfile);
-router.route('/:id/update').put(verifyToken, updateProfile);
+router
+  .route('/profile')
+  .get(verifyToken, verifyUserRoles(Role.user, Role.admin), userProfile);
+router
+  .route('/:id/update')
+  .put(verifyToken, verifyUserRoles(Role.user, Role.admin), updateProfile);
+router
+  .route('/users')
+  .get(verifyToken, verifyUserRoles(Role.admin), registeredUsers);
 
 module.exports = router;
