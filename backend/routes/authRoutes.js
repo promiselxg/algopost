@@ -5,6 +5,7 @@ const {
   userProfile,
   updateProfile,
   registeredUsers,
+  deleteUser,
 } = require('../controllers/userController');
 const Role = require('../config/roles');
 const router = express.Router();
@@ -23,5 +24,6 @@ router
 router
   .route('/users')
   .get(verifyToken, verifyUserRoles(Role.admin), registeredUsers);
+router.route('/users/:id').delete(verifyToken, deleteUser);
 
 module.exports = router;

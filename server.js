@@ -17,6 +17,10 @@ app.use(express.urlencoded({ extended: false }));
 //  mount routes
 app.use('/api/coins', require('./backend/routes/coinRoutes'));
 app.use('/api/auth', require('./backend/routes/authRoutes'));
+//  404 route
+app.use('*', (req, res) =>
+  res.status(404).json({ message: 'The requested route does not exist' })
+);
 //  custom error handler
 app.use(errorHandler);
 //  server conncetion

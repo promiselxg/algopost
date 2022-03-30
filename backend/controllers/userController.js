@@ -104,7 +104,8 @@ const userProfile = asyncHandler(async (req, res) => {
 //@access   Private
 const registeredUsers = asyncHandler(async (req, res) => {
   try {
-    const allUsers = await User.find()
+    //  select all users except admin
+    const allUsers = await User.find({ role: { $ne: ROLES.admin } })
       .sort({ _id: -1 })
       .select('-__v -password');
     if (allUsers) {
@@ -156,10 +157,42 @@ const updateProfile = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc     GET all registered users
+//@route    GET /api/auth/users
+//@access   Private
+const deleteUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    res.status(400);
+    throw new Error('Invalid User ID');
+  }
+  try {
+    //  check if user exist in DB
+    const userExist = await User.findById(id);
+    if (!userExist) {
+      res.status(401);
+      throw new Error('Invalid User ID: User does not exist.');
+    }
+    //  check if user id is equal to logged in user OR if logged user is an Admin.
+    if (req.user.id !== userExist.id && req.user.role[1] !== ROLES.admin) {
+      res.status(401);
+      throw new Error('Unauthorized Access!!!');
+    }
+    //  delete user account
+    if (await User.findByIdAndDelete(id)) {
+      res
+        .status(200)
+        .json({ status: 'success', message: 'account successfully removed' });
+    }
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
+});
 //  Generate JWT
 const generateToken = (id, role) => {
   return JWT.sign({ id, role }, process.env.JWT_SECRET, {
-    expiresIn: '5d',
+    expiresIn: '1d',
   });
 };
 
@@ -170,4 +203,5 @@ module.exports = {
   userProfile,
   updateProfile,
   registeredUsers,
+  deleteUser,
 };
