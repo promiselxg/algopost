@@ -157,8 +157,8 @@ const updateProfile = asyncHandler(async (req, res) => {
   }
 });
 
-//@desc     GET all registered users
-//@route    GET /api/auth/users
+//@desc     DELET User Profile
+//@route    DELETE  /api/auth/users/:id
 //@access   Private
 const deleteUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
