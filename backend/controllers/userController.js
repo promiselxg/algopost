@@ -104,9 +104,11 @@ const userProfile = asyncHandler(async (req, res) => {
 //@access   Private
 const registeredUsers = asyncHandler(async (req, res) => {
   try {
-    const allUsers = await User.find({ isAdmin: false }).sort({ _id: -1 });
+    const allUsers = await User.find()
+      .sort({ _id: -1 })
+      .select('-__v -password');
     if (allUsers) {
-      res.status(200).json({ count: allUsers.length, allUsers });
+      res.status(200).json({ count: allUsers.length, users: allUsers });
     }
   } catch (error) {
     throw new Error(error);
