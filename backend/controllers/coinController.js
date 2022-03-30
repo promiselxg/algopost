@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const Coin = require('../models/coinModel');
 const Vote = require('../models/voteModel');
 const User = require('../models/userModel');
+const Bookmark = require('../models/bookmarkModel');
 
 //@desc     Get all approved coins
 //@route    GET /api/coins
@@ -330,6 +331,42 @@ const registerCoin = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc     Get all approved coins
+//@route    GET /api/coins
+//@access   Public
+const bookMarkCoin = asyncHandler(async (req, res) => {
+  //  get requested token id
+  const { id } = req.params;
+  try {
+    if (!id) {
+      res.status(400);
+      throw new Error('Requested asset does not exist.');
+    }
+    //  check DB to see if id exist
+    const coinExist = await Coin.findById(id);
+    if (!coinExist) {
+      res.status(400);
+      throw new Error('Requested asset does not exist.');
+    }
+    //  bookmark coin
+    if (await Bookmark.findOne({ token_id: id })) {
+      await Bookmark.findOneAndDelete({ token_id: id });
+      res
+        .status(200)
+        .json({ status: true, message: 'Bookmark successfully removed' });
+    } else {
+      await Bookmark.create({
+        user_id: req.user.id,
+        token_id: id,
+      });
+      res.status(200).json({ status: true, message: 'Bookmark successfully' });
+    }
+  } catch (error) {
+    res.status(401);
+    throw new Error(error);
+  }
+});
+
 module.exports = {
   getApprovedCoins,
   getCoins,
@@ -340,4 +377,5 @@ module.exports = {
   approveCoin,
   voteCoin,
   myVotedCoins,
+  bookMarkCoin,
 };

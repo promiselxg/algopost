@@ -9,6 +9,7 @@ const {
   voteCoin,
   myVotedCoins,
   getApprovedCoins,
+  bookMarkCoin,
 } = require('../controllers/coinController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { verifyUserRoles } = require('../middleware/roleMiddleware');
@@ -33,5 +34,5 @@ router
   .get(verifyToken, verifyUserRoles(Role.user), myCoins)
   .put(verifyToken, verifyUserRoles(Role.user, Role.admin), updateCoin)
   .delete(verifyToken, verifyUserRoles(Role.admin, Role.user), deleteCoin);
-
+router.route('/:id/bookmark').post(verifyToken, bookMarkCoin);
 module.exports = router;
