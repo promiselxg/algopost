@@ -3,6 +3,7 @@ const Coin = require('../models/coinModel');
 const Vote = require('../models/voteModel');
 const User = require('../models/userModel');
 const Bookmark = require('../models/bookmarkModel');
+const ROLES = require('../config/roles');
 
 //@desc     Get all approved coins
 //@route    GET /api/coins/approved
@@ -174,7 +175,7 @@ const voteCoin = asyncHandler(async (req, res) => {
 const approveCoin = asyncHandler(async (req, res) => {
   const { id } = req.params;
   try {
-    if (req.user.isAdmin) {
+    if (req.user.role[1] === ROLES.admin) {
       //  get the token from DB
       const token = await Coin.findById(id);
       //  check if token is already approved
@@ -219,7 +220,10 @@ const deleteCoin = asyncHandler(async (req, res) => {
         throw new Error('Token not found.');
       }
       //  check if logged in user is the owner of this token or if logged in user is Admin
-      if (req.user.id == token.token_owner || req.user.isAdmin) {
+      if (
+        req.user.id == token.token_owner ||
+        req.user.role[1] === ROLES.admin
+      ) {
         if (await Coin.findByIdAndDelete(id)) {
           res.status(200).json({ status: 'success', id });
         } else {

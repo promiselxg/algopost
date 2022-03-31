@@ -99,17 +99,32 @@ const userProfile = asyncHandler(async (req, res) => {
   });
 });
 
-//@desc     GET all registered users
+//@desc     GET all registered users / verified accounts / unverified accounts
 //@route    GET /api/auth/users
 //@access   Private
 const registeredUsers = asyncHandler(async (req, res) => {
+  const query = req.query.activated;
   try {
-    //  select all users except admin
-    const allUsers = await User.find({ role: { $ne: ROLES.admin } })
-      .sort({ _id: -1 })
-      .select('-__v -password');
-    if (allUsers) {
-      res.status(200).json({ count: allUsers.length, users: allUsers });
+    //  check if activated query is provided
+    if (query) {
+      //  select all email activated[true/false] except admin
+      const allUsers = await User.find({
+        activated: query,
+        role: { $ne: ROLES.admin },
+      })
+        .sort({ _id: -1 })
+        .select('-__v -password');
+      if (allUsers) {
+        res.status(200).json({ count: allUsers.length, users: allUsers });
+      }
+    } else {
+      //  select all users except admin
+      const allUsers = await User.find({ role: { $ne: ROLES.admin } })
+        .sort({ _id: -1 })
+        .select('-__v -password');
+      if (allUsers) {
+        res.status(200).json({ count: allUsers.length, users: allUsers });
+      }
     }
   } catch (error) {
     throw new Error(error);
@@ -189,6 +204,7 @@ const deleteUser = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+
 //  Generate JWT
 const generateToken = (id, role) => {
   return JWT.sign({ id, role }, process.env.JWT_SECRET, {
