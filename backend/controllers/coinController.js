@@ -5,7 +5,7 @@ const User = require('../models/userModel');
 const Bookmark = require('../models/bookmarkModel');
 
 //@desc     Get all approved coins
-//@route    GET /api/coins
+//@route    GET /api/coins/approved
 //@access   Public
 const getApprovedCoins = asyncHandler(async (req, res) => {
   //  get all tokens where isApproved == true
@@ -23,10 +23,10 @@ const getApprovedCoins = asyncHandler(async (req, res) => {
 
 //@desc     Get all coins
 //@route    GET /api/coins
-//@access   Public
+//@access   Private
 const getCoins = asyncHandler(async (req, res) => {
   //  get all tokens where isApproved == true
-  const token = await Coin.find().sort({ _id: -1 });
+  const token = await Coin.find().sort({ _id: -1, vote: 1 });
 
   if (!token) {
     res.status(404);
@@ -129,7 +129,7 @@ const updateCoin = asyncHandler(async (req, res) => {
 });
 
 //@desc     Upvote Coin
-//@route    PUT /api/coins/:id
+//@route    PUT /api/coins/:id/vote
 //@access   Private
 const voteCoin = asyncHandler(async (req, res) => {
   //  get token id
@@ -331,9 +331,9 @@ const registerCoin = asyncHandler(async (req, res) => {
   }
 });
 
-//@desc     Get all approved coins
-//@route    GET /api/coins
-//@access   Public
+//@desc     Bookmark a token
+//@route    POST /api/coins/:id/bookmark
+//@access   Private
 const bookMarkCoin = asyncHandler(async (req, res) => {
   //  get requested token id
   const { id } = req.params;
@@ -367,6 +367,27 @@ const bookMarkCoin = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc     Get active/not approved token
+//@route    GET /api/coins/status?active=true or false
+//@access   Private
+const activeCoin = asyncHandler(async (req, res) => {
+  const query = req.query.active;
+  try {
+    if (query) {
+      const data = await Coin.find({ isApproved: query });
+      if (data) {
+        res.status(200).json({ status: 'success', count: data.length, data });
+      }
+    } else {
+      res.status(401);
+      throw new Error('Access Denied');
+    }
+  } catch (error) {
+    res.status(500);
+    throw new Error(error);
+  }
+});
+
 module.exports = {
   getApprovedCoins,
   getCoins,
@@ -378,4 +399,5 @@ module.exports = {
   voteCoin,
   myVotedCoins,
   bookMarkCoin,
+  activeCoin,
 };

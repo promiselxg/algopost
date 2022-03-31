@@ -10,6 +10,7 @@ const {
   myVotedCoins,
   getApprovedCoins,
   bookMarkCoin,
+  activeCoin,
 } = require('../controllers/coinController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { verifyUserRoles } = require('../middleware/roleMiddleware');
@@ -17,7 +18,10 @@ const Role = require('../config/roles');
 const router = express.Router();
 
 // Mount Routes
-router.route('/').get(getCoins);
+router.route('/').get(verifyToken, verifyUserRoles(Role.admin), getCoins);
+router
+  .route('/status')
+  .get(verifyToken, verifyUserRoles(Role.admin), activeCoin);
 router.route('/approved').get(getApprovedCoins);
 router
   .route('/new')
@@ -35,4 +39,5 @@ router
   .put(verifyToken, verifyUserRoles(Role.user, Role.admin), updateCoin)
   .delete(verifyToken, verifyUserRoles(Role.admin, Role.user), deleteCoin);
 router.route('/:id/bookmark').post(verifyToken, bookMarkCoin);
+
 module.exports = router;
