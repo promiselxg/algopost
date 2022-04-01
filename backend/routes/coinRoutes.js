@@ -8,9 +8,9 @@ const {
   approveCoin,
   voteCoin,
   myVotedCoins,
-  getApprovedCoins,
   bookMarkCoin,
   activeCoin,
+  addCoinReview,
 } = require('../controllers/coinController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { verifyUserRoles } = require('../middleware/roleMiddleware');
@@ -22,7 +22,6 @@ router.route('/').get(verifyToken, verifyUserRoles(Role.admin), getCoins);
 router
   .route('/status')
   .get(verifyToken, verifyUserRoles(Role.admin), activeCoin);
-router.route('/approved').get(getApprovedCoins);
 router
   .route('/new')
   .post(verifyToken, verifyUserRoles(Role.admin), registerCoin);
@@ -39,5 +38,6 @@ router
   .put(verifyToken, verifyUserRoles(Role.user, Role.admin), updateCoin)
   .delete(verifyToken, verifyUserRoles(Role.admin, Role.user), deleteCoin);
 router.route('/:id/bookmark').post(verifyToken, bookMarkCoin);
+router.route('/:id/review').post(verifyToken, addCoinReview);
 
 module.exports = router;

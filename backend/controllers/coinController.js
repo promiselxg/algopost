@@ -2,25 +2,9 @@ const asyncHandler = require('express-async-handler');
 const Coin = require('../models/coinModel');
 const Vote = require('../models/voteModel');
 const User = require('../models/userModel');
+const Review = require('../models/reviewModel');
 const Bookmark = require('../models/bookmarkModel');
 const ROLES = require('../config/roles');
-
-//@desc     Get all approved coins
-//@route    GET /api/coins/approved
-//@access   Public
-const getApprovedCoins = asyncHandler(async (req, res) => {
-  //  get all tokens where isApproved == true
-  const token = await Coin.find({ isApproved: true }).sort({ _id: -1 });
-
-  if (!token) {
-    res.status(404);
-    throw new Error('No Token found.');
-  }
-  res.status(200).json({
-    count: token.length,
-    token,
-  });
-});
 
 //@desc     Get all coins
 //@route    GET /api/coins
@@ -39,12 +23,13 @@ const getCoins = asyncHandler(async (req, res) => {
   });
 });
 
-//@desc     Get all coins for logged user
-//@route    GET /api/coins/:id
+//@desc     Get all coins for logged user or get user bookmarked token
+//@route    GET /api/coins/:id or /api/coins/:id?bookmarked=true
 //@access   Private
 const myCoins = asyncHandler(async (req, res) => {
   //  get login user id
   const { id } = req.params;
+  const query = req.query.bookmarked;
   //  check if ID param === logged in user
   if (id != req.user.id) {
     res.status(401);
@@ -52,11 +37,25 @@ const myCoins = asyncHandler(async (req, res) => {
   }
   //  fetch logged user data
   try {
-    const coin = await Coin.find({ token_owner: id }).sort({ _id: -1 });
+    // if ?bookmarked=true query string is included
+    if (query && query.toString().toLowerCase() === 'true') {
+      const bookmarkedCoin = await Bookmark.find({ user_id: id })
+        .sort({ _id: -1 })
+        .select('-__v');
+      res.status(200).json({
+        status: 'success',
+        count: bookmarkedCoin.length,
+        data: bookmarkedCoin,
+      });
+    } else {
+      const coin = await Coin.find({ token_owner: id }).sort({ _id: -1 });
 
-    res.status(200).json({
-      coin,
-    });
+      res.status(200).json({
+        status: 'success',
+        count: coin.length,
+        data: coin,
+      });
+    }
   } catch (error) {
     res.status(401);
     throw new Error(error);
@@ -392,8 +391,45 @@ const activeCoin = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc     Add Review/Comment
+//@route    POST /api/coins/:id/review
+//@access   Private
+const addCoinReview = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { review, rating } = req.body;
+  try {
+    if (!id || !review) {
+      res.status(401);
+      throw new Error('Invalid Request.');
+    } else {
+      //  check if ID exist in DB
+      const tokenExist = await Coin.findById(id);
+      if (tokenExist) {
+        const data = await Review.create({
+          user_id: req.user.id,
+          token_id: id,
+          review,
+          rating,
+        });
+        if (data) {
+          res.status(201).json({
+            status: 'success',
+            data: {
+              token_id: data.token_id,
+              review: data.review,
+              rating: data.rating,
+            },
+          });
+        }
+      }
+    }
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
+});
+
 module.exports = {
-  getApprovedCoins,
   getCoins,
   registerCoin,
   myCoins,
@@ -404,4 +440,5 @@ module.exports = {
   myVotedCoins,
   bookMarkCoin,
   activeCoin,
+  addCoinReview,
 };
