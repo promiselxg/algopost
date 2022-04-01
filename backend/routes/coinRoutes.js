@@ -37,7 +37,11 @@ router
   .get(verifyToken, verifyUserRoles(Role.user), myCoins)
   .put(verifyToken, verifyUserRoles(Role.user, Role.admin), updateCoin)
   .delete(verifyToken, verifyUserRoles(Role.admin, Role.user), deleteCoin);
-router.route('/:id/bookmark').post(verifyToken, bookMarkCoin);
-router.route('/:id/review').post(verifyToken, addCoinReview);
+router
+  .route('/:id/bookmark')
+  .post(verifyToken, verifyUserRoles(Role.user), bookMarkCoin);
+router
+  .route('/:id/review')
+  .post(verifyToken, verifyUserRoles(Role.user), addCoinReview);
 
 module.exports = router;
