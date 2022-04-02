@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv').config();
 const colors = require('colors');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const { errorHandler } = require('./backend/middleware/errorMiddleware');
 const connectDB = require('./backend/config/db');
 const PORT = process.env.PORT || 5000;
@@ -14,6 +15,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 //  mount routes
 app.use('/api/coins', require('./backend/routes/coinRoutes'));
 app.use('/api/auth', require('./backend/routes/authRoutes'));

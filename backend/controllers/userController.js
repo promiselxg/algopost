@@ -42,10 +42,7 @@ const registerUser = asyncHandler(async (req, res) => {
       //token: generateToken(user._id, user.isAdmin),
     });
     if (user) {
-      res.status(201).json({
-        _id: user.id,
-        username: user.username,
-      });
+      generateCookieResponse(200, res, user.id, ROLES.user);
     } else {
       res.status(400);
       throw new Error('Inavlid Credentials');
@@ -68,19 +65,9 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new Error('Please enter your username or password');
   }
   const user = await User.findOne({ username });
-
   if (user && (await bcrypt.compare(password, user.password))) {
     const roles = Object.values(user.role);
-    res.status(200);
-    res.json({
-      userInfo: {
-        _id: user.id,
-        username: user.username,
-        email: user.email,
-        role: roles,
-        token: generateToken(user._id, roles),
-      },
-    });
+    generateCookieResponse(200, res, user.id, roles);
   } else {
     res.status(400);
     throw new Error('Incorrect username or password.');
@@ -204,6 +191,21 @@ const deleteUser = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+
+//  Get token from Model and create cookie
+const generateCookieResponse = (statusCode, res, userId, userRole) => {
+  const token = generateToken(userId, userRole);
+  const options = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+  };
+  res.status(statusCode).cookie('token', token, options).json({
+    success: true,
+    token,
+  });
+};
 
 //  Generate JWT
 const generateToken = (id, role) => {
