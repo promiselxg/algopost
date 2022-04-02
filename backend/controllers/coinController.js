@@ -36,13 +36,13 @@ const getCoins = asyncHandler(async (req, res) => {
     query = Coin.find(JSON.parse(queryStr));
   }
 
-  //  Select fields
+  //  Select fields /api/coins?select=field1,field2....
   if (req.query.select) {
     const fields = req.query.select.split(',').join(' ');
     query = query.select(fields);
   }
 
-  //  Sort by multiple fields
+  //  Sort by multiple fields /api/coins?sort=field1,field2....[-prefix for descending]
   if (req.query.sort) {
     const sortBy = req.query.sort.split(',').join(' ');
     query = query.sort(sortBy);
@@ -50,16 +50,34 @@ const getCoins = asyncHandler(async (req, res) => {
     query = query.sort({ _id: -1, vote: 1 });
   }
 
-  //  Pagination
+  //  Pagination /api/coins?page=1&limit=2
   const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 1;
-  const skip = (page - 1) * limit;
+  const limit = parseInt(req.query.limit, 10) || 20;
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit;
+  const total = await Coin.countDocuments();
 
-  query = query.skip(skip).limit(limit);
+  query = query.skip(startIndex).limit(limit);
 
   // executing query
   const result = await query;
 
+  //  Pagination result
+  const pagination = {};
+  // next page
+  if (endIndex < total) {
+    pagination.next = {
+      page: page + 1,
+      limit,
+    };
+  }
+  //  prev page
+  if (startIndex > 0) {
+    pagination.prev = {
+      page: page - 1,
+      limit,
+    };
+  }
   if (!result) {
     res.status(404);
     throw new Error('No Token found.');
@@ -67,6 +85,7 @@ const getCoins = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     count: result.length,
+    pagination,
     data: result,
   });
 });
