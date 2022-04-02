@@ -18,7 +18,7 @@ const Role = require('../config/roles');
 const router = express.Router();
 
 // Mount Routes
-router.route('/').get(verifyToken, verifyUserRoles(Role.admin), getCoins);
+router.route('/').get(getCoins);
 router
   .route('/status')
   .get(verifyToken, verifyUserRoles(Role.admin), activeCoin);

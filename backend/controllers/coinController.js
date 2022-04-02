@@ -8,18 +8,66 @@ const ROLES = require('../config/roles');
 
 //@desc     Get all coins
 //@route    GET /api/coins
-//@access   Private
+//@access   Public
 const getCoins = asyncHandler(async (req, res) => {
-  //  get all tokens where isApproved == true
-  const token = await Coin.find().sort({ _id: -1, vote: 1 });
+  let query;
+  //  sort by specific fields
+  const reqQuery = { ...req.query };
 
-  if (!token) {
+  //  Array of fields to exclude from matching
+  const removeFields = ['select', 'sort', 'page', 'limit'];
+
+  //  Loop over removeFields and delete them from req.query
+  removeFields.forEach((param) => delete reqQuery[param]);
+
+  //  sort based on given condition / create query string
+  let queryStr = JSON.stringify(reqQuery);
+
+  // create operators ($gt,$gte,$lt,$lte,$in)
+  queryStr = queryStr.replace(
+    /\b(gt|gte|lt|lte|in)\b/g,
+    (match) => `$${match}`
+  );
+
+  //  Finding Resource
+  if (Object.keys(req.query).length === 0) {
+    query = Coin.find({ isApproved: true });
+  } else {
+    query = Coin.find(JSON.parse(queryStr));
+  }
+
+  //  Select fields
+  if (req.query.select) {
+    const fields = req.query.select.split(',').join(' ');
+    query = query.select(fields);
+  }
+
+  //  Sort by multiple fields
+  if (req.query.sort) {
+    const sortBy = req.query.sort.split(',').join(' ');
+    query = query.sort(sortBy);
+  } else {
+    query = query.sort({ _id: -1, vote: 1 });
+  }
+
+  //  Pagination
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 1;
+  const skip = (page - 1) * limit;
+
+  query = query.skip(skip).limit(limit);
+
+  // executing query
+  const result = await query;
+
+  if (!result) {
     res.status(404);
     throw new Error('No Token found.');
   }
   res.status(200).json({
-    count: token.length,
-    token,
+    success: true,
+    count: result.length,
+    data: result,
   });
 });
 
@@ -43,7 +91,7 @@ const myCoins = asyncHandler(async (req, res) => {
         .sort({ _id: -1 })
         .select('-__v');
       res.status(200).json({
-        status: 'success',
+        success: true,
         count: bookmarkedCoin.length,
         data: bookmarkedCoin,
       });
