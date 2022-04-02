@@ -10,15 +10,18 @@ const userSchema = mongoose.Schema(
     firstname: {
       type: String,
       required: [true, 'Please enter your First Name'],
+      trim: true,
     },
     lastname: {
       type: String,
       default: '',
+      trim: true,
     },
     email: {
       type: String,
       required: [true, 'Please add an email address'],
       unique: true,
+      trim: true,
     },
     password: {
       type: String,

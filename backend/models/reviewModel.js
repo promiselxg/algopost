@@ -15,6 +15,7 @@ const reviewSchema = mongoose.Schema(
     review: {
       type: String,
       require: [true, 'This field cannot be left empty.'],
+      trim: true,
     },
     rating: {
       type: Number,
