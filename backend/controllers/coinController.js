@@ -60,7 +60,10 @@ const getCoins = asyncHandler(async (req, res) => {
   query = query.skip(startIndex).limit(limit);
 
   // executing query
-  const result = await query;
+  const result = await query.populate({
+    path: 'token_owner',
+    select: 'username _id',
+  });
 
   //  Pagination result
   const pagination = {};
