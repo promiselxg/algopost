@@ -308,18 +308,20 @@ const registerCoin = asyncHandler(async (req, res, next) => {
           message:
             'token name or token symbol or token contract address already exist',
         });
-      }
-      //  upload image to cloudinary
-      const fileStr = files.file.filepath;
-      const uploadImageResponse = await cloudinary.uploader.upload(fileStr, {
-        upload_preset: 'algopot',
-      });
-      if (!uploadImageResponse) {
-        res.status(400).json({
-          status: false,
-          message: 'Image upload failed.',
+      } else {
+        //  upload image to cloudinary
+        const fileStr = files.file.filepath;
+        const uploadImageResponse = await cloudinary.uploader.upload(fileStr, {
+          upload_preset: 'algopot',
         });
+        if (!uploadImageResponse) {
+          res.status(400).json({
+            status: false,
+            message: 'Image upload failed.',
+          });
+        }
       }
+
       //  Submit new token
       const coin = await Coin.create({
         token_name,
@@ -352,7 +354,7 @@ const registerCoin = asyncHandler(async (req, res, next) => {
           .json({ status: false, message: 'Unable to register new token.' });
       }
     } catch (error) {
-      res.status(400).json({ status: false, message: error });
+      //res.json({ status: false, message: error });
     }
   });
 });
