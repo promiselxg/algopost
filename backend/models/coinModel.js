@@ -13,6 +13,11 @@ const coinSchema = mongoose.Schema(
       unique: true,
       trim: true,
     },
+    token_asa: {
+      type: String,
+      required: [true, 'Please provide the ASA for this token'],
+      unique: true,
+    },
     token_symbol: {
       type: String,
       required: [true, 'Please enter a token symbol'],

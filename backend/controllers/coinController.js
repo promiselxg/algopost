@@ -1,4 +1,6 @@
 const asyncHandler = require('express-async-handler');
+const formidable = require('formidable');
+const { cloudinary } = require('../utils/cloudinary');
 const Coin = require('../models/coinModel');
 const Vote = require('../models/voteModel');
 const User = require('../models/userModel');
@@ -238,90 +240,121 @@ const deleteCoin = asyncHandler(async (req, res) => {
 //@desc     Register new Coin
 //@route    POST /api/coins/new
 //@access   Private
-const registerCoin = asyncHandler(async (req, res) => {
-  //  check if user making this submission is the logged inn user
-
-  const {
-    token_name,
-    token_symbol,
-    token_network,
-    token_stage,
-    token_contract_address,
-    token_description,
-    token_logo,
-    token_launch_date,
-    token_chart_url,
-    token_swap_url,
-    token_website_url,
-    token_telegram_url,
-    token_twitter_url,
-    token_discord_url,
-  } = req.body;
-
-  //  validate incoming variable
-  if (
-    !token_name ||
-    !token_symbol ||
-    !token_network ||
-    !token_contract_address ||
-    !token_description ||
-    !token_logo ||
-    !token_launch_date ||
-    !token_website_url
-  ) {
-    res.status(401);
-    throw new Error('Please fill out the required fields.');
-  }
-
-  try {
-    //  check if token name already exist
-    const checkTokenName = await Coin.findOne({
-      $or: [{ token_name }, { token_symbol }, { token_contract_address }],
-    });
-    if (checkTokenName) {
-      res.status(401);
-      throw new Error(
-        `token name or token symbol or token contract address already exist`
-      );
-    }
-  } catch (error) {
-    res.status(400);
-    throw new Error(error);
-  }
-  //  Create Token
-  try {
-    const coin = await Coin.create({
-      token_name,
-      token_owner: req.user.id,
-      token_symbol,
-      token_network,
-      token_contract_address,
-      token_description,
-      token_logo,
-      token_stage,
-      token_chart_url,
-      token_swap_url,
-      token_website_url,
-      token_launch_date,
-      token_telegram_url,
-      token_twitter_url,
-      token_discord_url,
-    });
-    //  Return User Record
-    if (coin) {
-      res.status(201).json({
-        status: true,
-        message: 'Token Submitted Successfully',
+const registerCoin = asyncHandler(async (req, res, next) => {
+  //  check if user making this submission is the logged in user
+  const form = formidable({ multiples: true });
+  form.parse(req, async (err, fields, files) => {
+    try {
+      if (err) {
+        res.status(400).json({ status: false, message: err });
+      }
+      const {
+        token_name,
+        token_symbol,
+        token_network,
+        token_asa,
+        token_stage,
+        token_contract_address,
+        token_description,
+        token_launch_date,
+        token_chart_url,
+        token_swap_url,
+        token_website_url,
+        token_telegram_url,
+        token_twitter_url,
+        token_discord_url,
+      } = fields;
+      //  validate incoming variable
+      if (
+        !token_name ||
+        !token_symbol ||
+        !token_network ||
+        !token_contract_address ||
+        !token_description ||
+        !token_launch_date ||
+        !token_website_url
+      ) {
+        res.status(400).json({
+          status: false,
+          message: 'Please fill out the required fields',
+        });
+      }
+      //  check if file is an image
+      if (!files.file.mimetype.startsWith('image')) {
+        res.status(400).json({
+          status: false,
+          message: 'Please select an image',
+        });
+      }
+      //  check if image is > 1MB
+      if (files.file.size > process.env.IMAGE_MAX_SIZE) {
+        res.status(400).json({
+          status: false,
+          message: 'Your image must not be greater than 1MB',
+        });
+      }
+      //  check if token name already exist
+      const checkTokenName = await Coin.findOne({
+        $or: [
+          { token_name },
+          { token_symbol },
+          { token_contract_address },
+          { token_asa },
+        ],
       });
-      //  send email
-    } else {
-      res.status(400);
-      throw new Error('Unable to register new token.');
+      if (checkTokenName) {
+        res.status(400).json({
+          status: false,
+          message:
+            'token name or token symbol or token contract address already exist',
+        });
+      }
+      //  upload image to cloudinary
+      const fileStr = files.file.filepath;
+      const uploadImageResponse = await cloudinary.uploader.upload(fileStr, {
+        upload_preset: 'algopot',
+      });
+      if (!uploadImageResponse) {
+        res.status(400).json({
+          status: false,
+          message: 'Image upload failed.',
+        });
+      }
+      //  Submit new token
+      const coin = await Coin.create({
+        token_name,
+        token_owner: req.user.id,
+        token_asa,
+        token_symbol,
+        token_network,
+        token_contract_address,
+        token_description,
+        token_logo: uploadImageResponse.secure_url,
+        token_stage,
+        token_chart_url,
+        token_swap_url,
+        token_website_url,
+        token_launch_date,
+        token_telegram_url,
+        token_twitter_url,
+        token_discord_url,
+      });
+      //  Return User Record
+      if (coin) {
+        res.status(201).json({
+          status: true,
+          message: 'Token Submitted Successfully',
+        });
+        //  send email
+      } else {
+        res
+          .status(400)
+          .json({ status: false, message: 'Unable to register new token.' });
+      }
+    } catch (error) {
+      res.status(400).json({ status: false, message: error });
     }
-  } catch (error) {
-    res.status(400);
-    throw new Error(error);
-  }
+  });
 });
 
 //@desc     Bookmark a token
