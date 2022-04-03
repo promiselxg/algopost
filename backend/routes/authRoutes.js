@@ -7,7 +7,7 @@ const {
   registeredUsers,
   deleteUser,
 } = require('../controllers/userController');
-const Role = require('../config/roles');
+const Role = require('../utils/roles');
 const router = express.Router();
 const { verifyToken } = require('../middleware/authMiddleware');
 const { verifyUserRoles } = require('../middleware/roleMiddleware');

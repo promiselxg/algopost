@@ -14,7 +14,7 @@ const {
 } = require('../controllers/coinController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { verifyUserRoles } = require('../middleware/roleMiddleware');
-const Role = require('../config/roles');
+const Role = require('../utils/roles');
 const { queryFilter } = require('../middleware/queryMiddleware');
 const Coin = require('../models/coinModel');
 const router = express.Router();

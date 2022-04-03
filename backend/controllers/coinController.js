@@ -6,7 +6,7 @@ const Vote = require('../models/voteModel');
 const User = require('../models/userModel');
 const Review = require('../models/reviewModel');
 const Bookmark = require('../models/bookmarkModel');
-const ROLES = require('../config/roles');
+const ROLES = require('../utils/roles');
 
 //@desc     Get all coins
 //@route    GET /api/coins
