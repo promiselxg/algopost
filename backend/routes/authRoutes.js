@@ -6,11 +6,13 @@ const {
   updateProfile,
   registeredUsers,
   deleteUser,
+  uploadImage,
 } = require('../controllers/userController');
 const Role = require('../utils/roles');
 const router = express.Router();
 const { verifyToken } = require('../middleware/authMiddleware');
 const { verifyUserRoles } = require('../middleware/roleMiddleware');
+const { uploadFile } = require('../middleware/uploadMiddleware');
 
 // Mount Routes
 router.route('/register').post(registerUser);
@@ -25,5 +27,13 @@ router
   .route('/users')
   .get(verifyToken, verifyUserRoles(Role.admin), registeredUsers);
 router.route('/users/:id').delete(verifyToken, deleteUser);
+router
+  .route('/upload')
+  .post(
+    verifyToken,
+    verifyUserRoles(Role.admin),
+    uploadFile.single('file'),
+    uploadImage
+  );
 
 module.exports = router;

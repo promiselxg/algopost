@@ -2,7 +2,9 @@ const asyncHandler = require('express-async-handler');
 const bcrypt = require('bcryptjs');
 const JWT = require('jsonwebtoken');
 const User = require('../models/userModel');
+const Ads = require('../models/adsModel');
 const ROLES = require('../utils/roles');
+const { cloudinary } = require('../utils/cloudinary');
 //@desc     Register User
 //@route    POST /api/auth/register
 //@access   Public
@@ -192,6 +194,47 @@ const deleteUser = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc     Upload Ad
+//@route    POST /api/auth/upload
+//@access   Private
+const uploadImage = asyncHandler(async (req, res) => {
+  const { url } = req.body;
+  try {
+    if (req.file.filename.toString() !== '') {
+      if (req.file.size > process.env.IMAGE_MAX_SIZE) {
+        res.status(400);
+        throw new Error('image too big');
+      }
+      // upload image to cloudinary
+      const fileStr = req.file.path;
+      const uploadImageResponse = await cloudinary.uploader.upload(fileStr, {
+        upload_preset: 'ads',
+      });
+      if (!uploadImageResponse) {
+        res.status(400);
+        throw new Error('image too big');
+      } else {
+        //  poplutate db
+        const newAd = await Ads.create({
+          user_id: req.user.id,
+          url,
+          image_url: uploadImageResponse.secure_url,
+          image_id: uploadImageResponse.public_id.split('/')[1],
+        });
+        if (newAd) {
+          res.status(200).json({
+            status: true,
+            message: 'Ad uploaded successfully.',
+          });
+        }
+      }
+    }
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
+});
+
 //  Get token from Model and create cookie
 const generateCookieResponse = (statusCode, res, userId, userRole) => {
   const token = generateToken(userId, userRole);
@@ -222,4 +265,5 @@ module.exports = {
   updateProfile,
   registeredUsers,
   deleteUser,
+  uploadImage,
 };

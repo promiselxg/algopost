@@ -240,14 +240,11 @@ const deleteCoin = asyncHandler(async (req, res) => {
 //@desc     Register new Coin
 //@route    POST /api/coins/new
 //@access   Private
-const registerCoin = asyncHandler(async (req, res, next) => {
+const registerCoin = asyncHandler(async (req, res) => {
   //  check if user making this submission is the logged in user
   const form = formidable({ multiples: true });
   form.parse(req, async (err, fields, files) => {
     try {
-      if (err) {
-        res.status(400).json({ status: false, message: err });
-      }
       const {
         token_name,
         token_symbol,
@@ -354,7 +351,7 @@ const registerCoin = asyncHandler(async (req, res, next) => {
           .json({ status: false, message: 'Unable to register new token.' });
       }
     } catch (error) {
-      //res.json({ status: false, message: error });
+      // res.json({ status: false, message: error });
     }
   });
 });
