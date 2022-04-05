@@ -17,6 +17,7 @@ const { verifyUserRoles } = require('../middleware/roleMiddleware');
 const Role = require('../utils/roles');
 const { queryFilter } = require('../middleware/queryMiddleware');
 const Coin = require('../models/coinModel');
+const { uploadFile } = require('../middleware/uploadMiddleware');
 const router = express.Router();
 
 // Mount Routes
@@ -26,10 +27,18 @@ router
   .get(verifyToken, verifyUserRoles(Role.admin), activeCoin);
 router
   .route('/new')
-  .post(verifyToken, verifyUserRoles(Role.admin), registerCoin);
-router
-  .route('/approve/:id')
-  .put(verifyToken, verifyUserRoles(Role.admin), approveCoin);
+  .post(
+    verifyToken,
+    verifyUserRoles(Role.user, Role.admin),
+    uploadFile.single('file'),
+    registerCoin
+  );
+router.route('/approve/:id').put(
+  verifyToken,
+  verifyUserRoles(Role.admin),
+
+  approveCoin
+);
 router
   .route('/:id/vote')
   .put(verifyToken, verifyUserRoles(Role.user), voteCoin)

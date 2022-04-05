@@ -46,6 +46,10 @@ const coinSchema = mongoose.Schema(
       trim: true,
       required: [true, 'Please enter an address to your token logo'],
     },
+    image_id: {
+      type: String,
+      required: [true, 'Image ID Missing'],
+    },
     isApproved: {
       type: Boolean,
       default: false,

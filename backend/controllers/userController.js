@@ -212,7 +212,7 @@ const uploadImage = asyncHandler(async (req, res) => {
       });
       if (!uploadImageResponse) {
         res.status(400);
-        throw new Error('image too big');
+        throw new Error('Image upload failed');
       } else {
         //  poplutate db
         const newAd = await Ads.create({
@@ -222,12 +222,13 @@ const uploadImage = asyncHandler(async (req, res) => {
           image_id: uploadImageResponse.public_id.split('/')[1],
         });
         if (newAd) {
-          res.status(200).json({
+          res.status(201).json({
             status: true,
             message: 'Ad uploaded successfully.',
           });
         }
       }
+      // res.status(200).json(req.file);
     }
   } catch (error) {
     res.status(400);
