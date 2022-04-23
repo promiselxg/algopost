@@ -1,5 +1,4 @@
 const asyncHandler = require('express-async-handler');
-const formidable = require('formidable');
 const { cloudinary } = require('../utils/cloudinary');
 const Coin = require('../models/coinModel');
 const Vote = require('../models/voteModel');

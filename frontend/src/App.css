@@ -1,0 +1,8 @@
+@font-face {
+    font-family: 'FastHand';
+    src: url('./Font/FastHand.otf');
+}
+
+body {
+    background-color: #111621;
+}

@@ -33,12 +33,9 @@ router
     uploadFile.single('file'),
     registerCoin
   );
-router.route('/approve/:id').put(
-  verifyToken,
-  verifyUserRoles(Role.admin),
-
-  approveCoin
-);
+router
+  .route('/approve/:id')
+  .put(verifyToken, verifyUserRoles(Role.admin), approveCoin);
 router
   .route('/:id/vote')
   .put(verifyToken, verifyUserRoles(Role.user), voteCoin)

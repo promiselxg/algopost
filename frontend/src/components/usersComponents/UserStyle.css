@@ -1,0 +1,56 @@
+.dashboard {
+    padding-top: 70px;
+    margin: auto;
+    justify-content: center;
+} 
+
+.dashboard .user {
+    justify-content: center;
+    margin: auto;
+    display: grid;
+    grid-template-columns: repeat(2,1fr);
+}
+
+.dashboard .user-sub {
+    justify-content: center;
+    margin: auto;
+    display: grid;
+    grid-template-columns: repeat(2,1fr);
+}
+
+.user-sub .submitted {
+    background: #111621;
+}
+
+.db-btn {
+    display: grid;
+    grid-template-columns: repeat(1fr);
+    margin: auto;
+   justify-content: center;
+    margin: auto;
+}
+
+.db-btn .btn-dashboard {
+    font-size: 22px;
+    min-width: 600px;
+    border: none;
+    margin: 5px;
+    border-radius: 7px;
+    padding: 1rem 4rem;
+}
+
+.db-btn .btn-grid {
+    justify-content: center;
+    margin: auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.db-btn .grid {
+    font-size: 14px;
+    min-width: 285px;
+    border: none;
+    margin: 10px;
+    border-radius: 7px;
+    padding: 1rem 1rem;
+}

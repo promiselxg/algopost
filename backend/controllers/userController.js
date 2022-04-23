@@ -59,14 +59,14 @@ const registerUser = asyncHandler(async (req, res) => {
 //@route    POST /api/auth/login
 //@access   Public
 const loginUser = asyncHandler(async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
   //  check user credentials
-  if (!username || !password) {
+  if (!email || !password) {
     res.status(400);
-    throw new Error('Please enter your username or password');
+    throw new Error('Please enter your email or password');
   }
-  const user = await User.findOne({ username });
+  const user = await User.findOne({ email });
   if (user && (await bcrypt.compare(password, user.password))) {
     const roles = Object.values(user.role);
     generateCookieResponse(200, res, user.id, roles);
