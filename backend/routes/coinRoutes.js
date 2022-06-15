@@ -11,17 +11,31 @@ const {
   bookMarkCoin,
   activeCoin,
   addCoinReview,
+  getDailyVotes,
+  upcomingCoinListing,
+  getAllUpcomingCoin,
 } = require('../controllers/coinController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { verifyUserRoles } = require('../middleware/roleMiddleware');
 const Role = require('../utils/roles');
 const { queryFilter } = require('../middleware/queryMiddleware');
 const Coin = require('../models/coinModel');
+const WaitingList = require('../models/waitingListModel');
 const { uploadFile } = require('../middleware/uploadMiddleware');
 const router = express.Router();
 
 // Mount Routes
 router.route('/').get(queryFilter(Coin), getCoins);
+router
+  .route('/waitlist')
+  .post(
+    verifyToken,
+    verifyUserRoles(Role.admin),
+    uploadFile.single('file'),
+    upcomingCoinListing
+  )
+  .get(queryFilter(WaitingList), getAllUpcomingCoin);
+router.route('/votes').get(getDailyVotes);
 router
   .route('/status')
   .get(verifyToken, verifyUserRoles(Role.admin), activeCoin);

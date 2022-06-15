@@ -5,6 +5,7 @@ const User = require('../models/userModel');
 const Ads = require('../models/adsModel');
 const ROLES = require('../utils/roles');
 const { cloudinary } = require('../utils/cloudinary');
+
 //@desc     Register User
 //@route    POST /api/auth/register
 //@access   Public

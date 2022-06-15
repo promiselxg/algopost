@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const { cloudinary } = require('../utils/cloudinary');
 const Coin = require('../models/coinModel');
+const WaitingList = require('../models/waitingListModel');
 const Vote = require('../models/voteModel');
 const User = require('../models/userModel');
 const Review = require('../models/reviewModel');
@@ -33,7 +34,7 @@ const myCoins = asyncHandler(async (req, res) => {
       const bookmarkedCoin = await Bookmark.find({ user_id: id })
         .sort({ _id: -1 })
         .select('-__v');
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         count: bookmarkedCoin.length,
         data: bookmarkedCoin,
@@ -70,7 +71,7 @@ const myVotedCoins = asyncHandler(async (req, res) => {
             { user_id: req.user.id },
             { token_id: 1, _id: 0 }
           );
-          res.status(200).json({
+          return res.status(200).json({
             count: coinCheck.length,
             data: coinCheck,
           });
@@ -106,7 +107,7 @@ const updateCoin = asyncHandler(async (req, res) => {
         },
         { new: true }
       );
-      res.status(200).json(updatedCoin);
+      return res.status(200).json(updatedCoin);
     } else {
       res.status(401);
       throw new Error(
@@ -128,12 +129,14 @@ const voteCoin = asyncHandler(async (req, res) => {
   try {
     //  check if token exist
     const token = await Coin.findById(id);
-    if (token) {
-      //  check if token is approved
-      if (!token.isApproved) {
-        res.status(400);
-        throw new Error(`token not yet available for voting.`);
-      }
+    if (!token) {
+      res.status(404);
+      throw new Error('Coin ID not found.');
+    }
+    //  check if token is approved
+    if (!token.isApproved) {
+      res.status(400);
+      throw new Error(`token not yet available for voting.`);
     }
     // check Vote DB to see if this user has already voted for this coin
     const voteCheck = await Vote.findOne({
@@ -152,7 +155,9 @@ const voteCoin = asyncHandler(async (req, res) => {
     const voteRef = await Vote.create({ user_id: req.user.id, token_id: id });
     //  check if
     if (voteToken && voteRef) {
-      res.status(200).json({ status: true, message: 'vote successfull.' });
+      return res
+        .status(200)
+        .json({ status: true, message: 'vote successfull.' });
     }
   } catch (error) {
     res.status(400);
@@ -181,7 +186,7 @@ const approveCoin = asyncHandler(async (req, res) => {
           { new: true }
         );
 
-        res.status(200).json({ id, approved: approveCoin.isApproved });
+        return res.status(200).json({ id, approved: approveCoin.isApproved });
       }
     } else {
       res.status(401);
@@ -215,7 +220,7 @@ const deleteCoin = asyncHandler(async (req, res) => {
         req.user.role[1] === ROLES.admin
       ) {
         if (await Coin.findByIdAndDelete(id)) {
-          res.status(200).json({ status: 'success', id });
+          return res.status(200).json({ status: 'success', id });
         } else {
           res.status(400);
           throw new Error(`Error occured, unable to remove token ${id}`);
@@ -324,7 +329,7 @@ const registerCoin = asyncHandler(async (req, res) => {
           });
           //  Return User Record
           if (coin) {
-            res.status(201).json({
+            return res.status(201).json({
               status: true,
               message: 'Token Submitted Successfully',
             });
@@ -359,7 +364,7 @@ const bookMarkCoin = asyncHandler(async (req, res) => {
     //  bookmark coin
     if (await Bookmark.findOne({ token_id: id })) {
       await Bookmark.findOneAndDelete({ token_id: id });
-      res
+      return res
         .status(200)
         .json({ status: true, message: 'Bookmark successfully removed' });
     } else {
@@ -434,6 +439,114 @@ const addCoinReview = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc     Get All Votes By Date
+//@route    GET /api/votes?date=2022-06-15
+//@access   Public
+const getDailyVotes = asyncHandler(async (req, res) => {
+  const { date } = req.query;
+  if (!date) {
+    res.status(400);
+    throw new Error('Missing Date String.');
+  }
+  const tomorrow = new Date(date);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  try {
+    const votes = await Coin.find({
+      updatedAt: {
+        $gte: new Date(date),
+        $lt: new Date(tomorrow),
+      },
+    }).select('token_owner token_name, token_asa token_symbol token_logo');
+    res.status(200).json({
+      status: true,
+      data: votes,
+    });
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
+});
+
+//@desc     Add to token to waiting list
+//@route    POST /api/coins/waitlist
+//@access   Private
+const upcomingCoinListing = asyncHandler(async (req, res) => {
+  if (req.file.filename.toString() !== '') {
+    const { token_name, token_supply, token_url, listing_date, token_asa } =
+      req.body;
+    if (
+      !token_name ||
+      !token_supply ||
+      !token_url ||
+      !listing_date ||
+      !token_asa
+    ) {
+      return res
+        .status(401)
+        .json({ status: false, message: 'fill out the required fields.' });
+    }
+    try {
+      //  check if token already exist in waiting list
+      const tokenExist = await WaitingList.findOne({
+        token_name: token_name,
+        token_supply: token_supply,
+        token_asa: token_asa,
+        listed: false,
+      });
+      if (tokenExist) {
+        res.status(401);
+        throw new Error('Token already in waiting list.');
+      }
+      //  upload image to cloudinary
+      const fileStr = req.file.path;
+      const uploadImageResponse = await cloudinary.uploader.upload(fileStr, {
+        upload_preset: 'token',
+      });
+      if (!uploadImageResponse) {
+        res.status(400);
+        throw new Error('Image upload failed.');
+      }
+      //  add token to waiting list
+      const data = await WaitingList.create({
+        token_name,
+        token_supply,
+        token_asa,
+        website: token_url,
+        token_logo: uploadImageResponse.secure_url,
+        image_id: uploadImageResponse.public_id.split('/')[1],
+        listing_date,
+      });
+      if (data) {
+        return res.status(201).json({
+          status: true,
+          message: 'Token successfully added to the waiting list.',
+        });
+      }
+    } catch (error) {
+      res.status(400);
+      throw new Error(error);
+    }
+  }
+});
+
+//@desc     Add to token to waiting list
+//@route    POST /api/coins/waitlist
+//@access   Private
+const getAllUpcomingCoin = asyncHandler(async (req, res) => {
+  res.status(200).json(res.queryResults);
+  // try {
+  //   const response = await WaitingList.find().sort({ _id: -1 });
+  //   return res.status(200).json({
+  //     status: true,
+  //     data: response,
+  //   });
+  // } catch (error) {
+  //   res.status(400);
+  //   throw new Error(error);
+  // }
+});
+
 module.exports = {
   getCoins,
   registerCoin,
@@ -446,4 +559,7 @@ module.exports = {
   bookMarkCoin,
   activeCoin,
   addCoinReview,
+  getDailyVotes,
+  upcomingCoinListing,
+  getAllUpcomingCoin,
 };

@@ -3,12 +3,12 @@ const mongoose = require('mongoose');
 const reviewSchema = mongoose.Schema(
   {
     user_id: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.ObjectId,
       required: true,
       ref: 'User',
     },
     token_id: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.ObjectId,
       required: true,
       ref: 'Coin',
     },
