@@ -14,6 +14,8 @@ const {
   getDailyVotes,
   upcomingCoinListing,
   getAllUpcomingCoin,
+  deleteCoinListing,
+  updateCoinListing,
 } = require('../controllers/coinController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { verifyUserRoles } = require('../middleware/roleMiddleware');
@@ -35,10 +37,15 @@ router
     upcomingCoinListing
   )
   .get(queryFilter(WaitingList), getAllUpcomingCoin);
+router
+  .route('/waitlist/:id')
+  .delete(verifyToken, verifyUserRoles(Role.admin), deleteCoinListing)
+  .put(verifyToken, verifyUserRoles(Role.admin), updateCoinListing);
 router.route('/votes').get(getDailyVotes);
 router
   .route('/status')
   .get(verifyToken, verifyUserRoles(Role.admin), activeCoin);
+//  Register Token
 router
   .route('/new')
   .post(
@@ -50,18 +57,22 @@ router
 router
   .route('/approve/:id')
   .put(verifyToken, verifyUserRoles(Role.admin), approveCoin);
+
 router
   .route('/:id/vote')
   .put(verifyToken, verifyUserRoles(Role.user), voteCoin)
   .get(verifyToken, verifyUserRoles(Role.user), myVotedCoins);
+
 router
   .route('/:id')
   .get(verifyToken, verifyUserRoles(Role.user), myCoins)
   .put(verifyToken, verifyUserRoles(Role.user, Role.admin), updateCoin)
   .delete(verifyToken, verifyUserRoles(Role.admin, Role.user), deleteCoin);
+//  Bookmark token
 router
   .route('/:id/bookmark')
   .post(verifyToken, verifyUserRoles(Role.user), bookMarkCoin);
+//  Review
 router
   .route('/:id/review')
   .post(verifyToken, verifyUserRoles(Role.user), addCoinReview);

@@ -43,7 +43,7 @@ const myCoins = asyncHandler(async (req, res) => {
       const coin = await Coin.find({ token_owner: id }).sort({ _id: -1 });
 
       res.status(200).json({
-        status: 'success',
+        status: true,
         count: coin.length,
         data: coin,
       });
@@ -220,7 +220,7 @@ const deleteCoin = asyncHandler(async (req, res) => {
         req.user.role[1] === ROLES.admin
       ) {
         if (await Coin.findByIdAndDelete(id)) {
-          return res.status(200).json({ status: 'success', id });
+          return res.status(200).json({ status: true, id });
         } else {
           res.status(400);
           throw new Error(`Error occured, unable to remove token ${id}`);
@@ -389,7 +389,7 @@ const activeCoin = asyncHandler(async (req, res) => {
     if (query) {
       const data = await Coin.find({ isApproved: query });
       if (data) {
-        res.status(200).json({ status: 'success', count: data.length, data });
+        res.status(200).json({ status: true, count: data.length, data });
       }
     } else {
       res.status(401);
@@ -423,7 +423,7 @@ const addCoinReview = asyncHandler(async (req, res) => {
         });
         if (data) {
           res.status(201).json({
-            status: 'success',
+            status: true,
             data: {
               token_id: data.token_id,
               review: data.review,
@@ -532,7 +532,7 @@ const upcomingCoinListing = asyncHandler(async (req, res) => {
 
 //@desc     Add to token to waiting list
 //@route    POST /api/coins/waitlist
-//@access   Private
+//@access   Public
 const getAllUpcomingCoin = asyncHandler(async (req, res) => {
   res.status(200).json(res.queryResults);
   // try {
@@ -545,6 +545,63 @@ const getAllUpcomingCoin = asyncHandler(async (req, res) => {
   //   res.status(400);
   //   throw new Error(error);
   // }
+});
+
+//@desc     Remove Coin from waiting list
+//@route    DELETE /api/coins/waitlist/:id
+//@access   Private
+const deleteCoinListing = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  try {
+    //  get coin details from DB
+    const token = await WaitingList.findById(id);
+    if (!token) {
+      res.status(404);
+      throw new Error('Token not found.');
+    }
+    if (await WaitingList.findByIdAndDelete(id)) {
+      return res.status(200).json({ status: true, id });
+    } else {
+      res.status(400);
+      throw new Error(
+        `Error occured, unable to remove token from waiting list.`
+      );
+    }
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
+});
+
+//@desc     Update an Upcoming token.
+//@route    PUT /api/coins/waitlist/:id
+//@access   Private
+const updateCoinListing = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  try {
+    const coinExist = await WaitingList.findById(id);
+    if (!coinExist) {
+      return res.status(404).json({
+        status: false,
+        message: 'Request ID does not exist.',
+      });
+    }
+    try {
+      await WaitingList.findByIdAndUpdate(id, {
+        $set: { listed: req.body.listed },
+      });
+      return res.status(200).json({
+        status: true,
+        message: 'Token Listing Status updated successfully.',
+      });
+    } catch (error) {
+      res.status(400);
+      throw new Error(error);
+    }
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
 });
 
 module.exports = {
@@ -562,4 +619,6 @@ module.exports = {
   getDailyVotes,
   upcomingCoinListing,
   getAllUpcomingCoin,
+  deleteCoinListing,
+  updateCoinListing,
 };
