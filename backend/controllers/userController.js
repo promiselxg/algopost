@@ -93,17 +93,19 @@ const userProfile = asyncHandler(async (req, res) => {
 //@route    GET /api/auth/users
 //@access   Private
 const registeredUsers = asyncHandler(async (req, res) => {
-  const query = req.query.activated;
+  const { activated, limit } = req.query;
   try {
     //  check if activated query is provided
-    if (query) {
+    if (activated) {
       //  select all email activated[true/false] except admin
       const allUsers = await User.find({
-        activated: query,
+        activated: activated,
         role: { $ne: ROLES.admin },
       })
         .sort({ _id: -1 })
-        .select('-__v -password');
+        .select('-__v -password')
+        .limit(limit);
+
       if (allUsers) {
         res.status(200).json({ count: allUsers.length, users: allUsers });
       }
@@ -111,7 +113,8 @@ const registeredUsers = asyncHandler(async (req, res) => {
       //  select all users except admin
       const allUsers = await User.find({ role: { $ne: ROLES.admin } })
         .sort({ _id: -1 })
-        .select('-__v -password');
+        .select('-__v -password')
+        .limit(limit);
       if (allUsers) {
         res.status(200).json({ count: allUsers.length, users: allUsers });
       }

@@ -16,6 +16,7 @@ const {
   getAllUpcomingCoin,
   deleteCoinListing,
   updateCoinListing,
+  tokenVerification,
 } = require('../controllers/coinController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { verifyUserRoles } = require('../middleware/roleMiddleware');
@@ -28,6 +29,7 @@ const router = express.Router();
 
 // Mount Routes
 router.route('/').get(queryFilter(Coin), getCoins);
+router.route('/verfication').post(tokenVerification);
 router
   .route('/waitlist')
   .post(

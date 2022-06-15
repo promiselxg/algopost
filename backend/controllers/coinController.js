@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const { cloudinary } = require('../utils/cloudinary');
 const Coin = require('../models/coinModel');
 const WaitingList = require('../models/waitingListModel');
+const TokenVerification = require('../models/tokenVerificationModel');
 const Vote = require('../models/voteModel');
 const User = require('../models/userModel');
 const Review = require('../models/reviewModel');
@@ -604,6 +605,65 @@ const updateCoinListing = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc     Update an Upcoming token.
+//@route    PUT /api/coins/waitlist/:id
+//@access   Private
+const tokenVerification = asyncHandler(async (req, res) => {
+  const {
+    email,
+    token_asa,
+    creators_address,
+    transaction,
+    creators_token_id,
+    isValid,
+  } = req.body;
+
+  if (!email || !token_asa || !creators_address || !creators_token_id) {
+    return res.status(400).json({
+      status: false,
+      message: `Please fill out the required fields.`,
+      data: {
+        email,
+        token_asa,
+        creators_address,
+        transaction,
+        creators_token_id,
+        isValid,
+      },
+    });
+  }
+  try {
+    //  check if token already exist.
+    const tokenExist = await TokenVerification.findOne({
+      email: email,
+      token_asa: token_asa,
+    });
+    if (tokenExist) {
+      return res.status(400).json({
+        status: false,
+        message: 'Token already submitted for verification',
+      });
+    }
+    const newToken = await TokenVerification.create({
+      email,
+      token_asa,
+      creators_address,
+      transaction,
+      creators_token_id,
+      isValid,
+    });
+    if (newToken) {
+      return res.status(201).json({
+        status: true,
+        message: 'Token successfully submitted for verification.',
+      });
+    }
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
+});
+
 module.exports = {
   getCoins,
   registerCoin,
@@ -621,4 +681,5 @@ module.exports = {
   getAllUpcomingCoin,
   deleteCoinListing,
   updateCoinListing,
+  tokenVerification,
 };
