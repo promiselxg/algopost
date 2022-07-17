@@ -247,96 +247,87 @@ const deleteCoin = asyncHandler(async (req, res) => {
 //@access   Private
 const registerCoin = asyncHandler(async (req, res) => {
   //  check if user making this submission is the logged in user
+  const photos = req.body.photos;
+  const { inputForm } = req.body;
+  const {
+    token_name,
+    token_symbol,
+    token_network,
+    token_asa,
+    token_stage,
+    token_contract_address,
+    token_description,
+    token_launch_date,
+    token_chart_url,
+    token_swap_url,
+    token_website_url,
+    token_telegram_url,
+    token_twitter_url,
+    token_discord_url,
+  } = inputForm;
+
   try {
-    if (req.file.filename.toString() !== '') {
-      const {
+    //  validate incoming variable
+    if (
+      !token_name ||
+      !token_symbol ||
+      !token_network ||
+      !token_asa ||
+      !token_contract_address ||
+      !token_description ||
+      !token_launch_date ||
+      !token_website_url
+    ) {
+      res.status(400);
+      throw new Error('Please fill out the required fields.');
+    }
+    // //  check if image is > 1MB
+    // if (req.file.size > process.env.IMAGE_MAX_SIZE) {
+    //   res.status(400);
+    //   throw new Error('Selected Image Must be less than 1MB.');
+    // }
+    //  check if token name already exist
+    const checkTokenName = await Coin.findOne({
+      $or: [
+        { token_name },
+        { token_symbol },
+        { token_contract_address },
+        { token_asa },
+      ],
+    });
+    if (checkTokenName) {
+      res.status(400);
+      throw new Error(
+        'token name or token symbol or token contract address already exist.'
+      );
+    } else {
+      //  Submit new token
+      const coin = await Coin.create({
         token_name,
+        token_owner: req.user.id,
+        token_asa,
         token_symbol,
         token_network,
-        token_asa,
-        token_stage,
         token_contract_address,
         token_description,
-        token_launch_date,
+        token_logo: photos.map((url) => url.secure_url),
+        image_id: photos.map((url) => url.public_id.split('/')[1]),
+        token_stage,
         token_chart_url,
         token_swap_url,
         token_website_url,
+        token_launch_date,
         token_telegram_url,
         token_twitter_url,
         token_discord_url,
-      } = req.body;
-      //  validate incoming variable
-      if (
-        !token_name ||
-        !token_symbol ||
-        !token_network ||
-        !token_asa ||
-        !token_contract_address ||
-        !token_description ||
-        !token_launch_date ||
-        !token_website_url
-      ) {
-        res.status(400);
-        throw new Error('Please fill out the required fields.');
-      }
-      //  check if image is > 1MB
-      if (req.file.size > process.env.IMAGE_MAX_SIZE) {
-        res.status(400);
-        throw new Error('Selected Image Must be less than 1MB.');
-      }
-      //  check if token name already exist
-      const checkTokenName = await Coin.findOne({
-        $or: [
-          { token_name },
-          { token_symbol },
-          { token_contract_address },
-          { token_asa },
-        ],
       });
-      if (checkTokenName) {
-        res.status(400);
-        throw new Error(
-          'token name or token symbol or token contract address already exist.'
-        );
-      } else {
-        //  upload image to cloudinary
-        const fileStr = req.file.path;
-        const uploadImageResponse = await cloudinary.uploader.upload(fileStr, {
-          upload_preset: 'token',
+      //  Return User Record
+      if (coin) {
+        return res.status(201).json({
+          status: true,
+          message: 'Token Submitted Successfully',
         });
-        if (!uploadImageResponse) {
-          res.status(400);
-          throw new Error('Image upload failed');
-        } else {
-          //  Submit new token
-          const coin = await Coin.create({
-            token_name,
-            token_owner: req.user.id,
-            token_asa,
-            token_symbol,
-            token_network,
-            token_contract_address,
-            token_description,
-            token_logo: uploadImageResponse.secure_url,
-            image_id: uploadImageResponse.public_id.split('/')[1],
-            token_stage,
-            token_chart_url,
-            token_swap_url,
-            token_website_url,
-            token_launch_date,
-            token_telegram_url,
-            token_twitter_url,
-            token_discord_url,
-          });
-          //  Return User Record
-          if (coin) {
-            return res.status(201).json({
-              status: true,
-              message: 'Token Submitted Successfully',
-            });
-            //  send email
-          }
-        }
+        //  send email
       }
     }
   } catch (error) {

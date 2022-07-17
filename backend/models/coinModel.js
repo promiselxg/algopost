@@ -28,7 +28,6 @@ const coinSchema = mongoose.Schema(
       type: String,
       required: [true, 'Please provide a token network'],
       trim: true,
-      enum: ['Binance', 'Ethereum', 'Polygon', 'Tron', 'Solana'],
     },
     token_contract_address: {
       type: String,
@@ -42,12 +41,12 @@ const coinSchema = mongoose.Schema(
       required: [true, 'Please enter a discription'],
     },
     token_logo: {
-      type: String,
+      type: [String],
       trim: true,
       required: [true, 'Please enter an address to your token logo'],
     },
     image_id: {
-      type: String,
+      type: [String],
       required: [true, 'Image ID Missing'],
     },
     isApproved: {
