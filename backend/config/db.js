@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const connectDB = async () => {
   try {
@@ -8,7 +8,7 @@ const connectDB = async () => {
       `MongoDB Connected: ${conn.connection.host}`.cyan.bold.underline
     );
   } catch (error) {
-    console.log(error.red.bold.underline);
+    console.log(error);
     process.exit(1);
   }
 };

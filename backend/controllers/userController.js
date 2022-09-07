@@ -41,11 +41,13 @@ const registerUser = asyncHandler(async (req, res) => {
       lastname,
       email,
       password: hashedPassword,
-      role: [ROLES.user],
+      role: [ROLES.admin],
+      // role: [ROLES.user],
       //token: generateToken(user._id, user.isAdmin),
     });
     if (user) {
-      generateCookieResponse(200, res, user.id, ROLES.user);
+      generateCookieResponse(200, res, user.id, ROLES.admin);
+      // generateCookieResponse(200, res, user.id, ROLES.user);
     } else {
       res.status(400);
       throw new Error('Inavlid Credentials');
@@ -100,7 +102,7 @@ const registeredUsers = asyncHandler(async (req, res) => {
       //  select all email activated[true/false] except admin
       const allUsers = await User.find({
         activated: activated,
-        role: { $ne: ROLES.admin },
+        role: { $ne: ROLES.user },
       })
         .sort({ _id: -1 })
         .select('-__v -password')
