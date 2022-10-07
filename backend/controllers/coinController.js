@@ -8,12 +8,28 @@ const User = require("../models/userModel");
 const Review = require("../models/reviewModel");
 const Bookmark = require("../models/bookmarkModel");
 const ROLES = require("../utils/roles");
+const Rating = require("../models/ratingModel");
 
 //@desc     Get all coins
 //@route    GET /api/coins
 //@access   Public
 const getCoins = asyncHandler(async (req, res) => {
   res.status(200).json(res.queryResults);
+});
+//@desc     Get a particular coin info
+//@route    GET /api/coins/getCoin?token=token_asa
+//@access   Public
+const getCoin = asyncHandler(async (req, res) => {
+  try {
+    const partiCularToken = await Coin.find({ token_asa: req.query.token });
+    // const bookMarkSearch = await Bookmark.findOne({
+    //   user_id: req.user.id,
+    //   token_id: partiCularToken[0]._id,
+    // });
+    res.status(200).json(partiCularToken);
+  } catch (e) {
+    res.status(400).send("Token not found!.");
+  }
 });
 
 //@desc     Get all coins for logged user or get user bookmarked token
@@ -127,6 +143,7 @@ const updateCoin = asyncHandler(async (req, res) => {
 const voteCoin = asyncHandler(async (req, res) => {
   //  get token id
   const { id } = req.params;
+  console.log({ id });
   try {
     //  check if token exist
     const token = await Coin.findById(id);
@@ -171,30 +188,30 @@ const voteCoin = asyncHandler(async (req, res) => {
 const approveCoin = asyncHandler(async (req, res) => {
   const { id } = req.params;
   try {
-    if (req.user.role[1] === ROLES.admin) {
-      //  get the token from DB
-      const token = await Coin.findById(id);
-      //  check if token is already approved
-      if (token.isApproved == true) {
-        res.status(401);
-        throw new Error("Token already approved");
-      } else {
-        const approveCoin = await Coin.findByIdAndUpdate(
-          id,
-          {
-            $set: { isApproved: req.body.isApproved },
-          },
-          { new: true }
-        );
-
-        return res.status(200).json({ id, approved: approveCoin.isApproved });
-      }
-    } else {
+    // if (req.user.role[1] === ROLES.admin) {
+    //  get the token from DB
+    const token = await Coin.findById(id);
+    //  check if token is already approved
+    if (token.isApproved == true) {
       res.status(401);
-      throw new Error(
-        `Access Denied, you are not authorized to perform this action.`
+      throw new Error("Token already approved");
+    } else {
+      const approveCoin = await Coin.findByIdAndUpdate(
+        id,
+        {
+          $set: { isApproved: req.body.isApproved },
+        },
+        { new: true }
       );
+
+      return res.status(200).json({ id, approved: approveCoin.isApproved });
     }
+    // } else {
+    //   res.status(401);
+    //   throw new Error(
+    //     `Access Denied, you are not authorized to perform this action.`
+    //   );
+    // }
   } catch (error) {
     res.status(401);
     throw new Error(error);
@@ -382,8 +399,16 @@ const bookMarkCoin = asyncHandler(async (req, res) => {
       throw new Error("Requested asset does not exist.");
     }
     //  bookmark coin
-    if (await Bookmark.findOne({ token_id: id })) {
-      await Bookmark.findOneAndDelete({ token_id: id });
+    if (
+      await Bookmark.findOne({
+        user_id: req.user.id,
+        token_id: id,
+      })
+    ) {
+      await Bookmark.findOneAndDelete({
+        user_id: req.user.id,
+        token_id: id,
+      });
       return res
         .status(200)
         .json({ status: true, message: "Bookmark successfully removed" });
@@ -397,6 +422,23 @@ const bookMarkCoin = asyncHandler(async (req, res) => {
   } catch (error) {
     res.status(401);
     throw new Error(error);
+  }
+});
+
+//@desc     Get a token book mark status
+//@route    GET /api/coins/:id/bookmark
+//@access   Private
+const getBookmark = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (
+    await Bookmark.findOne({
+      user_id: req.user.id,
+      token_id: id,
+    })
+  ) {
+    res.status(200).json({ bookmark: true });
+  } else {
+    res.status(400).send("Bookmark not found");
   }
 });
 
@@ -427,6 +469,7 @@ const activeCoin = asyncHandler(async (req, res) => {
 const addCoinReview = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { review, rating } = req.body;
+  console.log({ review, rating });
   try {
     if (!id || !review) {
       res.status(401);
@@ -456,6 +499,24 @@ const addCoinReview = asyncHandler(async (req, res) => {
   } catch (error) {
     res.status(400);
     throw new Error(error);
+  }
+});
+
+//@desc     Add Review/Comment
+//@route    GET /api/coins/:id/review
+//@access   Pubic
+const getCoinReview = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).send("An error occured");
+  }
+  try {
+    const reviews = await Review.find({ token_id: id }).populate("user_id");
+    // console.log({ reviews: reviews[0]?.user_id });
+    // console.log({ reviews });
+    return res.status(200).json(reviews.reverse());
+  } catch (e) {
+    return res.status(200).json([]);
   }
 });
 
@@ -684,7 +745,103 @@ const tokenVerification = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc     Update an Upcoming token.
+//@route    post /:id/ratings
+//@access   Private
+const addRate = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { rate } = req.body;
+  if (!id) return res.status(400).send("Please provide a valid token id");
+  if (!rate) return res.status(400).send("Please provide a valid ratings");
+  if (parseInt(rate) > 5) {
+    return res.status(400).send("Rating number cannot be greater than 5");
+  }
+  try {
+    if (await Coin.findById(id)) {
+      const findUserOldReview = await Rating.findOne({
+        user_id: req.user.id,
+        token_id: id,
+      });
+      if (!findUserOldReview) {
+        console.log({ rate, type: typeof rate, user: req.user.id });
+        const reviewCoin = await Rating.create({
+          user_id: req.user.id,
+          token_id: id,
+          rating: parseInt(rate),
+        });
+        return res.status(200).send("Token Reviewed");
+      } else {
+        console.log({ findUserOldReview });
+        const updateReview = await Rating.findByIdAndUpdate(
+          findUserOldReview._id,
+          {
+            $set: {
+              user_id: req.user.id,
+              token_id: id,
+              rating: parseInt(rate),
+            },
+          },
+          { new: true }
+        );
+      }
+      return res.status(200).send("Token updated");
+    } else {
+      return res.status(400).send("Coin does not exist in our database.");
+    }
+  } catch (e) {
+    return res.status(400).send("An error occured.");
+  }
+});
+
+//@desc     Get a user rating for a token.
+//@route    Get /:id/userrating
+//@access   Private
+const getUserRatings = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!id) return res.status(400).send("Kindly provide a valid token address.");
+  try {
+    const tokenRatings = await Rating.findOne({
+      token_id: id,
+      user_id: req.user.id,
+    });
+    console.log({ tokenRatings });
+    if (tokenRatings) {
+      return res.status(200).json({ rating: tokenRatings.rating });
+    } else {
+      return res.status(200).json({ rating: 0 });
+    }
+  } catch (e) {
+    return res.status(400).send("An error occurred.");
+  }
+});
+
+//@desc     Get all token ratings.
+//@route    Get /:id/ratings
+//@access   Public
+const getCoinRating = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!id) return res.status(400).send("Kindly provide a valid token address.");
+  try {
+    const allTokenRatings = await Rating.find({ token_id: id });
+    if (allTokenRatings.length > 0) {
+      const allRates = allTokenRatings.map((v) => v.rating);
+      const totalRatings = allRates.reduce((total, token) => total + token);
+      const rating = totalRatings / allRates.length;
+      console.log({ rating });
+      return res.status(200).json({ rating });
+    } else {
+      console.log({ allTokenRatings });
+      return res.status(200).json({ rating: 0 });
+    }
+  } catch (e) {
+    return res.status(400).send("An error occurred.");
+  }
+});
 module.exports = {
+  getCoinReview,
+  getCoinRating,
+  getUserRatings,
+  addRate,
   getCoins,
   registerCoin,
   myCoins,
@@ -702,4 +859,6 @@ module.exports = {
   deleteCoinListing,
   updateCoinListing,
   tokenVerification,
+  getCoin,
+  getBookmark,
 };
