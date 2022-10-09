@@ -41,7 +41,7 @@ const registerUser = asyncHandler(async (req, res) => {
       lastname,
       email,
       password: hashedPassword,
-      role: [ROLES.admin],
+      role: [ROLES.user],
       // role: [ROLES.user],
       //token: generateToken(user._id, user.isAdmin),
     });
