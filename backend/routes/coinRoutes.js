@@ -23,6 +23,7 @@ const {
   addRate,
   getCoinRating,
   getUserRatings,
+  getvotes24,
 } = require("../controllers/coinController");
 const { verifyToken } = require("../middleware/authMiddleware");
 const { verifyUserRoles } = require("../middleware/roleMiddleware");
@@ -96,5 +97,8 @@ router
 router
   .route("/:id/userrating")
   .get(verifyToken, verifyUserRoles(Role.user), getUserRatings);
+
+//get 24hrs votes
+router.route("/:id/votes24").get(getvotes24);
 
 module.exports = router;

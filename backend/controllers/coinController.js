@@ -10,11 +10,43 @@ const Bookmark = require("../models/bookmarkModel");
 const ROLES = require("../utils/roles");
 const Rating = require("../models/ratingModel");
 
+function isToday(date) {
+  const today = new Date();
+
+  // 👇️ Today's date
+  console.log(today);
+
+  if (today.toDateString() === date.toDateString()) {
+    return true;
+  }
+
+  return false;
+}
+
 //@desc     Get all coins
 //@route    GET /api/coins
 //@access   Public
 const getCoins = asyncHandler(async (req, res) => {
   res.status(200).json(res.queryResults);
+});
+//@desc     Get all 24hrs vote
+//@route    GET /:id/votes24
+//@access   Public
+const getvotes24 = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  console.log({ id });
+  if (!id) return res.status(400).send("Kindly provide a valid token asa.");
+  try {
+    const start = new Date().toDateString();
+    const votes24hrs = await Vote.find({
+      token_id: id,
+      createdAt: { $gte: start },
+    });
+    res.status(200).json({ votesCount: votes24hrs.length });
+  } catch (e) {
+    console.log(e.message);
+    return res.status(401).send("An error occured");
+  }
 });
 //@desc     Get a particular coin info
 //@route    GET /api/coins/getCoin?token=token_asa
@@ -143,7 +175,6 @@ const updateCoin = asyncHandler(async (req, res) => {
 const voteCoin = asyncHandler(async (req, res) => {
   //  get token id
   const { id } = req.params;
-  console.log({ id });
   try {
     //  check if token exist
     const token = await Coin.findById(id);
@@ -161,23 +192,40 @@ const voteCoin = asyncHandler(async (req, res) => {
       token_id: id,
       user_id: req.user.id,
     });
-    if (voteCheck) {
-      res.status(401);
-      throw new Error("already voted");
-    }
+    // if (isToday(new Date(voteCheck.updatedAt))) return res.
+
     // upvote token
     const voteToken = await Coin.findByIdAndUpdate(id, {
       vote: token.vote + 1,
     });
-    //  create vote reference on voteDB
-    const voteRef = await Vote.create({ user_id: req.user.id, token_id: id });
-    //  check if
-    if (voteToken && voteRef) {
-      return res
-        .status(200)
-        .json({ status: true, message: "vote successfull." });
+    if (voteCheck) {
+      if (isToday(new Date(voteCheck.updatedAt))) {
+        res.status(401);
+        throw new Error("You not vote twice within a day");
+        return;
+      }
+      const updatevote = await Vote.findByIdAndUpdate(voteCheck._id, {
+        user_id: req.user.id,
+        token_id: id,
+      });
+      if (voteToken && updatevote) {
+        return res
+          .status(200)
+          .json({ status: true, message: "vote successfull." });
+      }
+    }
+    if (!voteCheck) {
+      //  create vote reference on voteDB
+      const voteRef = await Vote.create({ user_id: req.user.id, token_id: id });
+      //  check if
+      if (voteToken && voteRef) {
+        return res
+          .status(200)
+          .json({ status: true, message: "vote successfull." });
+      }
     }
   } catch (error) {
+    console.log(error.message);
     res.status(400);
     throw new Error(error);
   }
@@ -838,6 +886,7 @@ const getCoinRating = asyncHandler(async (req, res) => {
   }
 });
 module.exports = {
+  getvotes24,
   getCoinReview,
   getCoinRating,
   getUserRatings,
