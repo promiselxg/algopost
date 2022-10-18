@@ -333,6 +333,10 @@ const registerCoin = asyncHandler(async (req, res) => {
     token_twitter_url,
     token_discord_url,
     photos,
+    token_role,
+    token_categories,
+    token_partnerships,
+    token_type,
   } = req.body;
 
   try {
@@ -413,6 +417,10 @@ const registerCoin = asyncHandler(async (req, res) => {
         token_telegram_url,
         token_twitter_url,
         token_discord_url,
+        token_role,
+        token_categories,
+        token_partnerships,
+        token_type,
       });
       //  Return User Record
       if (coin) {
