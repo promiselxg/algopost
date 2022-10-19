@@ -9,18 +9,19 @@ const Review = require("../models/reviewModel");
 const Bookmark = require("../models/bookmarkModel");
 const ROLES = require("../utils/roles");
 const Rating = require("../models/ratingModel");
+const axios = require("axios");
 
 function isToday(date) {
   const today = new Date();
-
+  const refinedDate = new Date(date);
   // 👇️ Today's date
   console.log(today);
-
-  if (today.toDateString() === date.toDateString()) {
-    return true;
-  }
-
-  return false;
+  const itIsToday =
+    today.getFullYear === refinedDate.getFullYear &&
+    today.getMonth === refinedDate.getMonth &&
+    today.getDate() === refinedDate.getDate();
+  console.log({ itIsToday });
+  return itIsToday;
 }
 
 //@desc     Get all coins
@@ -40,7 +41,7 @@ const getvotes24 = asyncHandler(async (req, res) => {
     const start = new Date().toDateString();
     const votes24hrs = await Vote.find({
       token_id: id,
-      createdAt: { $gte: start },
+      updatedAt: { $gte: start },
     });
     res.status(200).json({ votesCount: votes24hrs.length });
   } catch (e) {
@@ -175,8 +176,18 @@ const updateCoin = asyncHandler(async (req, res) => {
 const voteCoin = asyncHandler(async (req, res) => {
   //  get token id
   const { id } = req.params;
+  const { reapchaId } = req.body;
+  // console.log({ reapchaId });
   try {
     //  check if token exist
+    const resep = await axios.get(
+      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.CAPTCHA_SECRET_KEY}&response=${reapchaId}`
+    );
+    console.log({ captchadata: resep.data });
+    if (!resep.data.success) {
+      res.status(400);
+      throw new Error("Captcha Verification failed.");
+    }
     const token = await Coin.findById(id);
     if (!token) {
       res.status(404);
@@ -199,7 +210,7 @@ const voteCoin = asyncHandler(async (req, res) => {
       vote: token.vote + 1,
     });
     if (voteCheck) {
-      if (isToday(new Date(voteCheck.updatedAt))) {
+      if (isToday(voteCheck.updatedAt)) {
         res.status(401);
         throw new Error("You not vote twice within a day");
         return;
