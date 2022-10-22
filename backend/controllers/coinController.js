@@ -10,6 +10,7 @@ const Bookmark = require("../models/bookmarkModel");
 const ROLES = require("../utils/roles");
 const Rating = require("../models/ratingModel");
 const axios = require("axios");
+const STATUS = require("../utils/tokenstatuses");
 
 function isToday(date) {
   const today = new Date();
@@ -258,7 +259,10 @@ const approveCoin = asyncHandler(async (req, res) => {
       const approveCoin = await Coin.findByIdAndUpdate(
         id,
         {
-          $set: { isApproved: req.body.isApproved },
+          $set: {
+            isApproved: req.body.isApproved,
+            token_status: STATUS.active,
+          },
         },
         { new: true }
       );
@@ -432,6 +436,7 @@ const registerCoin = asyncHandler(async (req, res) => {
         token_categories,
         token_partnerships,
         token_type,
+        token_status: STATUS.notListed,
       });
       //  Return User Record
       if (coin) {
@@ -516,7 +521,10 @@ const activeCoin = asyncHandler(async (req, res) => {
   const query = req.query.active;
   try {
     if (query) {
-      const data = await Coin.find({ isApproved: query });
+      const data = await Coin.find({
+        isApproved: query,
+        token_status: STATUS.active,
+      });
       if (data) {
         res.status(200).json({ status: true, count: data.length, data });
       }
